@@ -39,11 +39,19 @@ class BotProtocol(irc.IRCClient):
             args = ""
 
         nick = self.factory.get_nick(user)
-        for mod in self.factory.commands.get(cmd, []):
-            log.msg("[%s] %s called %s %s" % (channel, nick, cmd, ' '.join(args)))
-            th = threads.deferToThread(mod, self, nick, channel, args)
-            th.addCallback(self._log_callback, '<%s> completed' % (cmd,))
-            th.addErrback(self._log_callback, '<%s> error' % (cmd,))
+
+        if channel != self.nickname:
+            for mod in self.factory.commands.get(cmd, []):
+                log.msg("[%s] %s called %s %s" % (channel, nick, cmd, ' '.join(args)))
+                th = threads.deferToThread(mod, self, nick, channel, args)
+                th.addCallback(self._log_callback, '<%s> completed' % (cmd,))
+                th.addErrback(self._log_callback, '<%s> error' % (cmd,))
+        else:
+            for mod in self.factory.priv_commands.get(cmd, []):
+                log.msg("[%s] %s called %s %s" % (channel, nick, cmd, ' '.join(args)))
+                th = threads.deferToThread(mod, self, nick, channel, args)
+                th.addCallback(self._log_callback, '<%s> completed' % (cmd,))
+                th.addErrback(self._log_callback, '<%s> error' % (cmd,))
 
 class BotFactory(protocol.ClientFactory):
     protocol = BotProtocol
@@ -52,8 +60,10 @@ class BotFactory(protocol.ClientFactory):
         self.channel = channel
         self.nickname = nickname
         self.pw = pw
+
         self.plugins = []
         self.commands = {}
+        self.priv_commands = {}
 
         self.command_char = '!'
 
@@ -98,6 +108,15 @@ class BotFactory(protocol.ClientFactory):
                         if not cmd in self.commands.keys():
                             self.commands[cmd] = []
                         self.commands[cmd].append(obj)
+
+                    elif name.startswith('privcmd_') and type(obj) == types.FunctionType:
+                        cmd = name[8:]
+                        if not cmd in self.priv_commands.keys():
+                            self.priv_commands[cmd] = []
+                        self.priv_commands[cmd].append(obj)
+
+        log.msg('Commands: %s' % (' '.join(self.commands.keys())))
+        log.msg('Priv Commands: %s' % (' '.join(self.priv_commands.keys())))
 
 if __name__ == "__main__":
     log.startLogging(sys.stdout)
