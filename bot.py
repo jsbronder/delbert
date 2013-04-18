@@ -107,6 +107,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     b = BotFactory('#delbert-test', auth[0], auth[2])
-    reactor.connectTCP('irc.freenode.net', 6667, b)
+    from twisted.protocols.policies import TrafficLoggingFactory
+    lf = TrafficLoggingFactory(b, 'irc')
+    reactor.connectTCP('irc.freenode.net', 6667, lf)
 
     reactor.run()
