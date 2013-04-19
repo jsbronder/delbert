@@ -16,6 +16,8 @@ class BotProtocol(irc.IRCClient):
         return self.factory.nickname
 
     def _log_callback(self, *args, **kwds):
+        if hasattr(args[0], 'printTraceback'):
+            args[0].printTraceback()
         log.msg(args[1], system='BotProtocol')
 
     def signedOn(self):
@@ -29,8 +31,14 @@ class BotProtocol(irc.IRCClient):
 
     def privmsg(self, user, channel, msg):
         log.msg("[%s] <%s>:  %s" % (channel, user, msg))
+
         if msg.startswith(self.factory.command_char):
             self._cmd(user, channel, msg[1:])
+        elif channel != self.nickname:
+            for name, funcs in self.factory.passive.items():
+                for func in funcs:
+                    th = threads.deferToThread(func, self, channel, msg)
+                    th.addErrback(self._log_callback, '<%s> error' % (name,))
 
     def _cmd(self, user, channel, cmd):
         try:
@@ -64,6 +72,7 @@ class BotFactory(protocol.ClientFactory):
         self.plugins = []
         self.commands = {}
         self.priv_commands = {}
+        self.passive = {}
 
         self.command_char = '!'
 
@@ -103,20 +112,30 @@ class BotFactory(protocol.ClientFactory):
                 self.plugins.append(env)
 
                 for name, obj in env.items():
-                    if name.startswith('cmd_') and type(obj) == types.FunctionType:
+                    if type(obj) != types.FunctionType:
+                        continue
+
+                    elif name.startswith('cmd_'):
                         cmd = name[4:]
                         if not cmd in self.commands.keys():
                             self.commands[cmd] = []
                         self.commands[cmd].append(obj)
 
-                    elif name.startswith('privcmd_') and type(obj) == types.FunctionType:
+                    elif name.startswith('privcmd_'):
                         cmd = name[8:]
                         if not cmd in self.priv_commands.keys():
                             self.priv_commands[cmd] = []
                         self.priv_commands[cmd].append(obj)
 
+                    elif name.startswith('passive_'):
+                        cmd = name[8:]
+                        if not cmd in self.passive:
+                            self.passive[cmd] = []
+                        self.passive[cmd].append(obj)
+
         log.msg('Commands: %s' % (' '.join(self.commands.keys())))
         log.msg('Priv Commands: %s' % (' '.join(self.priv_commands.keys())))
+        log.msg('Passive Commands: %s' % (' '.join(self.passive.keys())))
 
 if __name__ == "__main__":
     log.startLogging(sys.stdout)
