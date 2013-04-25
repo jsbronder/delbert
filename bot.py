@@ -38,8 +38,6 @@ class BotProtocol(irc.IRCClient):
         log.msg("Joined %s" % (channel,))
 
     def privmsg(self, user, channel, msg):
-        log.msg("[%s] <%s>:  %s" % (channel, user, msg))
-
         if msg.startswith(self.factory.command_char):
             self._cmd(user, channel, msg[1:])
         elif channel != self.nickname:
