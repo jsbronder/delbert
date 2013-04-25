@@ -14,7 +14,7 @@ def passive_linker(proto, channel, msg):
             html = requests.get(url)
         except requests.exceptions.RequestException, e:
             return str(e)
-        
+
         if html.headers['content-type'].startswith('image'):
             title = u'Image'
         elif html.headers['content-type'].startswith('application/pdf'):
@@ -24,13 +24,14 @@ def passive_linker(proto, channel, msg):
             title = parsed.title.text
             title = title.lstrip(string.whitespace)
 
+        surl = ''
         try:
             isgd = requests.get('http://is.gd/create.php?format=json&url=%s' % (urllib.quote(url),))
             surl = isgd.json['shorturl']
-        except requests.exceptions.RequestException, e:
-            surl = u'is.gd failed :/'
-            
-        msg = '%s @ %s' % (title,  surl)
+        except (requests.exceptions.RequestException, KeyError):
+            pass
+
+        msg = '%s%s%s' % (title, ' @ ' if surl else '',  surl)
         if isinstance(msg, types.UnicodeType):
             msg = msg.encode('utf-8')
 
