@@ -1,7 +1,11 @@
+import getopt
 import netrc
 import os
+import stat
 import sys
 import types
+
+import yaml
 
 from twisted.words.protocols import irc
 from twisted.internet import (
@@ -9,6 +13,10 @@ from twisted.internet import (
     reactor,
     threads)
 from twisted.python import log
+from twisted.protocols.policies import TrafficLoggingFactory
+
+DEFAULT_CONFIG = os.path.join(
+    os.environ['HOME'], '.config', 'delbert', 'bot.conf')
 
 class BotProtocol(irc.IRCClient):
     @property
@@ -137,16 +145,75 @@ class BotFactory(protocol.ClientFactory):
         log.msg('Priv Commands: %s' % (' '.join(self.priv_commands.keys())))
         log.msg('Passive Commands: %s' % (' '.join(self.passive.keys())))
 
-if __name__ == "__main__":
-    log.startLogging(sys.stdout)
-    auth = netrc.netrc().authenticators('irc.freenode.net')
-    if not len(auth):
-        log.err("No authentication for irc.freenode.net in ~/.netrc")
+def parse_config(path):
+    perms = stat.S_IMODE(os.stat(path).st_mode)
+    if perms & stat.S_IRGRP or perms & stat.S_IROTH:
+        print("Warning:  unsafe config permissions")
+
+    with open(path) as f:
+        config = yaml.load(f.read())
+
+    missing = []
+    for key in ('server', 'port', 'nick', 'pass'):
+        if not key in config:
+            missing.append(key)
+
+    if len(missing):
+        raise KeyError("Missing required configuration keys: %s"
+            % ' '.join(missing))
+
+    return config
+
+def usage():
+    print """%s [ARGUMENTS]
+
+ARGUMENTS:
+    -h, --help              This screen
+    -c, --config [FILE]     Path to config file [%s]
+    -t, --traffic [FILE]    Log traffic to specified file
+"""
+
+def main():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'hc:', ['help', 'config='])
+    except getopt.GetoptError, e:
+        print (str(e))
         sys.exit(1)
 
-    b = BotFactory('#delbert-test', auth[0], auth[2])
-    from twisted.protocols.policies import TrafficLoggingFactory
-    lf = TrafficLoggingFactory(b, 'irc')
-    reactor.connectTCP('irc.freenode.net', 6667, lf)
+    config_path = DEFAULT_CONFIG
+    traffic_log = False
+
+    for o, a in opts:
+        if o in ('-h', '--help'):
+            usage()
+            sys.exit(0)
+        elif o in ('-c', '--config'):
+            config_path = a
+        elif o in ('-t', '--traffic'):
+            traffic_log = a
+
+    config = parse_config(config_path)
+
+    if 'logfile' in config:
+        if config['logfile'] == 'stdout':
+            log.startLogging(sys.stdout)
+        else:
+            log.startLogging(config['logfile'])
+
+    bot = BotFactory(
+        config['channels'][0],
+        config['nick'],
+        config['pass'])
+
+    if traffic_log:
+        lf = TrafficLoggingFactory(bot, 'irc')
+        reactor.connectTCP(config['server'], config['port'], lf)
+    else:
+        reactor.connectTCP(config['server'], config['port'], bot)
 
     reactor.run()
+
+
+if __name__ == "__main__":
+    main()
+
