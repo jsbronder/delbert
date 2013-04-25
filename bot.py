@@ -30,9 +30,10 @@ class BotProtocol(irc.IRCClient):
 
     def signedOn(self):
         log.msg("Signed on")
-        self.join(self.factory.channel)
         self.msg('nickserv', 'identify %s %s' %
             (self.factory.nickname, self.factory.pw))
+        for channel in self.factory.channels:
+            self.join(channel)
 
     def joined(self, channel):
         log.msg("Joined %s" % (channel,))
@@ -70,8 +71,8 @@ class BotProtocol(irc.IRCClient):
 class BotFactory(protocol.ClientFactory):
     protocol = BotProtocol
 
-    def __init__(self, channel, nickname, pw):
-        self.channel = channel
+    def __init__(self, channels, nickname, pw):
+        self.channels = channels
         self.nickname = nickname
         self.pw = pw
 
@@ -199,7 +200,7 @@ def main():
             log.startLogging(config['logfile'])
 
     bot = BotFactory(
-        config['channels'][0],
+        config['channels'],
         config['nick'],
         config['pass'])
 
