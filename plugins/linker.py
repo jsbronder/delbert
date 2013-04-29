@@ -22,7 +22,8 @@ def passive_linker(proto, channel, user, msg):
         else:
             parsed = soup(html.text)
             title = parsed.title.text
-            title = title.lstrip(string.whitespace)
+            title = title.strip()
+            title = title.replace('\n', ' ')
 
         surl = ''
         try:
