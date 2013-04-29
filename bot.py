@@ -123,6 +123,9 @@ class BotFactory(protocol.ClientFactory):
                     if type(obj) != types.FunctionType:
                         continue
 
+                    elif name == 'init':
+                        obj()
+
                     elif name.startswith('cmd_'):
                         cmd = name[4:]
                         if not cmd in self.commands.keys():
