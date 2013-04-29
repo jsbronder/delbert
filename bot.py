@@ -1,5 +1,4 @@
 import getopt
-import netrc
 import os
 import stat
 import sys
@@ -71,10 +70,11 @@ class BotProtocol(irc.IRCClient):
 class BotFactory(protocol.ClientFactory):
     protocol = BotProtocol
 
-    def __init__(self, channels, nickname, pw):
+    def __init__(self, channels, nickname, pw, dbdir):
         self.channels = channels
         self.nickname = nickname
         self.pw = pw
+        self.dbdir = dbdir
 
         self.plugins = []
         self.commands = {}
@@ -100,6 +100,7 @@ class BotFactory(protocol.ClientFactory):
     def _get_plugin_env(self):
         return {
             'get_nick': self.get_nick,
+            'dbdir': self.dbdir,
         }
 
     def _load_plugins(self, path = 'plugins'):
@@ -161,6 +162,19 @@ def parse_config(path):
         raise KeyError("Missing required configuration keys: %s"
             % ' '.join(missing))
 
+    if 'dbdir' in config:
+        config['dbdir'] = os.path.expanduser(config['dbdir'])
+        if not config['dbdir'].startswith('/'):
+            config['dbdir'] = os.path.join(os.path.dirname(path), config['dbdir'])
+    else:
+        config['dbdir'] = os.path.join(os.path.dirname(path), 'db')
+
+    if not os.path.exists(config['dbdir']):
+        os.makedirs(config['dbdir'])
+    elif not os.path.isdir(config['dbdir']):
+        raise OSError("dbdir '%s' exists but is not a directory" %
+            (config['dbdir'],))
+
     return config
 
 def usage():
@@ -202,7 +216,8 @@ def main():
     bot = BotFactory(
         config['channels'],
         config['nick'],
-        config['pass'])
+        config['pass'],
+        config['dbdir'])
 
     if traffic_log:
         lf = TrafficLoggingFactory(bot, 'irc')
