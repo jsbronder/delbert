@@ -43,7 +43,7 @@ class BotProtocol(irc.IRCClient):
         elif channel != self.nickname:
             for name, funcs in self.factory.passive.items():
                 for func in funcs:
-                    th = threads.deferToThread(func, self, channel, msg)
+                    th = threads.deferToThread(func, self, channel, user, msg)
                     th.addErrback(self._log_callback, '<%s> error' % (name,))
 
     def _cmd(self, user, channel, cmd):

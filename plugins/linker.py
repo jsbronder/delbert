@@ -6,7 +6,7 @@ import urllib
 import requests
 from bs4 import BeautifulSoup as soup
 
-def passive_linker(proto, channel, msg):
+def passive_linker(proto, channel, user, msg):
     exp = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+#]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
     urls = re.findall(exp, msg)
     for url in urls:
