@@ -2,6 +2,7 @@ import os
 import re
 
 import yaml
+from twisted.python import log
 
 KARMA_TRACKER = None
 
@@ -40,19 +41,25 @@ class Karma(object):
     def parse_msg(self, proto, channel, user, msg):
         pos = re.findall(self._pos_search, msg)
         neg = re.findall(self._neg_search, msg)
+        save = False
 
         for nick in pos:
             if nick == user:
                 proto.say(channel, "%s: Giving yourself karma?  Lame." % (nick,))
             else:
                 self.add(channel, nick)
+                log.msg("Adding karma for %s" % (user,))
+                save = True
 
         for nick in neg:
             if nick == user:
                 proto.say(channel, "%s: self loathe much?" % (nick,))
             self.neg(channel, nick)
+            log.msg("Subtracting karma for %s" % (user,))
+            save = True
 
-        self.save()
+        if save:
+            self.save()
 
     def channel_karma(self, channel):
         if channel in self._karma:
