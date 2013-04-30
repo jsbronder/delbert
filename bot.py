@@ -56,13 +56,13 @@ class BotProtocol(irc.IRCClient):
 
         if channel != self.nickname:
             for mod in self.factory.commands.get(cmd, []):
-                log.msg("[%s] %s called %s %s" % (channel, nick, cmd, ' '.join(args)))
+                log.msg("[%s] %s called %s %s" % (channel, nick, cmd, args))
                 th = threads.deferToThread(mod, self, nick, channel, args)
                 th.addCallback(self._log_callback, '<%s> completed' % (cmd,))
                 th.addErrback(self._log_callback, '<%s> error' % (cmd,))
         else:
             for mod in self.factory.priv_commands.get(cmd, []):
-                log.msg("[%s] %s called %s %s" % (channel, nick, cmd, ' '.join(args)))
+                log.msg("[%s] %s called %s %s" % (channel, nick, cmd, args))
                 th = threads.deferToThread(mod, self, nick, channel, args)
                 th.addCallback(self._log_callback, '<%s> completed' % (cmd,))
                 th.addErrback(self._log_callback, '<%s> error' % (cmd,))
