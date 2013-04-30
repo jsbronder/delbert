@@ -64,7 +64,7 @@ def passive_karma(proto, channel, user, msg):
 def cmd_karma(proto, nick, channel, msg):
     karma = KARMA_TRACKER.channel_karma(channel)
     if len(karma):
-        proto.say(channel, 'Karma:')
+        proto.notice(channel, 'Karma:')
         for nick, value in karma.items():
             proto.notice(channel, '    %-20s%d' % (nick + ':', value))
     else:
