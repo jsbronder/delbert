@@ -37,14 +37,19 @@ class Karma(object):
         with open(self._ds, 'w') as fp:
             yaml.dump(self._karma, fp)
 
-    def parse_msg(self, channel, user, msg):
+    def parse_msg(self, proto, channel, user, msg):
         pos = re.findall(self._pos_search, msg)
         neg = re.findall(self._neg_search, msg)
 
         for nick in pos:
-            self.add(channel, nick)
+            if nick == user:
+                proto.say(channel, "%s: Giving yourself karma?  Lame." % (nick,))
+            else:
+                self.add(channel, nick)
 
         for nick in neg:
+            if nick == user:
+                proto.say(channel, "%s: self loathe much?" % (nick,))
             self.neg(channel, nick)
 
         self.save()
@@ -59,7 +64,7 @@ def init():
     KARMA_TRACKER = Karma()
 
 def passive_karma(proto, channel, user, msg):
-    KARMA_TRACKER.parse_msg(channel, user, msg)
+    KARMA_TRACKER.parse_msg(proto, channel, get_nick(user), msg)
 
 def cmd_karma(proto, nick, channel, msg):
     karma = KARMA_TRACKER.channel_karma(channel)
