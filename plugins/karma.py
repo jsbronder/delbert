@@ -48,14 +48,14 @@ class Karma(object):
                 proto.say(channel, "%s: Giving yourself karma?  Lame." % (nick,))
             else:
                 self.add(channel, nick)
-                log.msg("Adding karma for %s" % (user,))
+                log.msg("[%s] Adding karma for %s" % (channel, user,))
                 save = True
 
         for nick in neg:
             if nick == user:
                 proto.say(channel, "%s: self loathe much?" % (nick,))
             self.neg(channel, nick)
-            log.msg("Subtracting karma for %s" % (user,))
+            log.msg("[%s] Subtracting karma for %s" % (channel, user,))
             save = True
 
         if save:
