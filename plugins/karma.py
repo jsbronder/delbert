@@ -19,7 +19,7 @@ class Karma(object):
         if os.path.exists(self._ds):
             with open(self._ds, 'r') as fp:
                 self._karma = yaml.load(fp.read())
-                
+
     def _modify(self, channel, user, amount):
         if not channel in self._karma:
             self._karma[channel] = {}
@@ -27,6 +27,8 @@ class Karma(object):
             self._karma[channel][user] = 0
 
         self._karma[channel][user] += amount
+        if self._karma[channel][user] == 0:
+            del self._karma[channel][user]
 
     def add(self, channel, user):
         self._modify(channel, user, 1)
