@@ -34,7 +34,7 @@ def passive_linker(proto, channel, user, msg):
             continue
 
         try:
-            html = requests.get(url)
+            html = requests.get(url, verify=False)
         except requests.exceptions.RequestException, e:
             log.err(str(e))
             return str(e)
