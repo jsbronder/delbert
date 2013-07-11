@@ -70,11 +70,12 @@ class BotProtocol(irc.IRCClient):
 class BotFactory(protocol.ClientFactory):
     protocol = BotProtocol
 
-    def __init__(self, channels, nickname, pw, dbdir):
-        self.channels = channels
-        self.nickname = nickname
-        self.pw = pw
-        self.dbdir = dbdir
+    def __init__(self, config):
+        self._config = config
+        self.channels = config['channels']
+        self.nickname = config['nick']
+        self.pw = config['pass']
+        self.dbdir = config['dbdir']
 
         self.plugins = []
         self.commands = {}
@@ -101,10 +102,12 @@ class BotFactory(protocol.ClientFactory):
         log.err("Connection failed: %s" % (reason,))
         reactor.stop()
 
-    def _get_plugin_env(self):
+    def _get_plugin_env(self, plugin_name):
         return {
             'get_nick': self.get_nick,
+            'get_host': self.get_host,
             'dbdir': self.dbdir,
+            'config': self._config.get(plugin_name, {})
         }
 
     def _load_plugins(self, path = 'plugins'):
@@ -112,7 +115,7 @@ class BotFactory(protocol.ClientFactory):
             if pfile.endswith('.py') and not pfile.startswith('__'):
                 pname = pfile[:-3]
                 try:
-                    env = self._get_plugin_env()
+                    env = self._get_plugin_env(pname)
                     execfile(os.path.join(path, pfile), env)
 
                 except ImportError, e:
@@ -220,11 +223,7 @@ def main():
         else:
             log.startLogging(config['logfile'])
 
-    bot = BotFactory(
-        config['channels'],
-        config['nick'],
-        config['pass'],
-        config['dbdir'])
+    bot = BotFactory(config)
 
     if traffic_log:
         lf = TrafficLoggingFactory(bot, 'irc')
