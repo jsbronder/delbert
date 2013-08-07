@@ -37,6 +37,13 @@ class BotProtocol(irc.IRCClient):
     def joined(self, channel):
         log.msg("Joined %s" % (channel,))
 
+    def userJoined(self, user, channel):
+        log.msg("%s joined %s", (user, channel))
+        for name, funcs in self.factory.user_joined.items():
+            for func in funcs:
+                th = threads.deferToThread(func, self, channel, user)
+                th.addErrback(self._log_callback, '<%s> error' % (name,))
+
     def privmsg(self, user, channel, msg):
         if msg.startswith(self.factory.command_char):
             self._cmd(user, channel, msg[1:])
@@ -80,6 +87,7 @@ class BotFactory(protocol.ClientFactory):
         self.plugins = []
         self.commands = {}
         self.priv_commands = {}
+        self.user_joined = {}
         self.passive = {}
 
         self.command_char = '!'
@@ -151,9 +159,14 @@ class BotFactory(protocol.ClientFactory):
                             self.passive[cmd] = []
                         self.passive[cmd].append(obj)
 
+                    elif name.startswith('user_joined_cmd_'):
+                        cmd = name[16:]
+                        self.user_joined[cmd].append(obj)
+
         log.msg('Commands: %s' % (' '.join(self.commands.keys())))
         log.msg('Priv Commands: %s' % (' '.join(self.priv_commands.keys())))
         log.msg('Passive Commands: %s' % (' '.join(self.passive.keys())))
+        log.msg('User Joined Commands: %s' % (' '.join(self.user_joined.keys())))
 
 def parse_config(path):
     perms = stat.S_IMODE(os.stat(path).st_mode)
