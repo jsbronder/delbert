@@ -161,6 +161,8 @@ class BotFactory(protocol.ClientFactory):
 
                     elif name.startswith('user_joined_cmd_'):
                         cmd = name[16:]
+                        if not cmd in self.user_joined:
+                            self.user_joined[cmd] = []
                         self.user_joined[cmd].append(obj)
 
         log.msg('Commands: %s' % (' '.join(self.commands.keys())))
