@@ -8,13 +8,15 @@ response = Template('${created_on}: ${body}')
 
 def cmd_github(proto, _, channel, __):
     try:
-        html = requests.get('https://status.github.com/api/messages.json', verify=False)
+        html = requests.get('https://status.github.com/api/last-message.json', verify=False)
     except requests.exceptions.RequestException, e:
         log.err(str(e))
         return str(e)
 
-    msgs = html.json()
+    msg = '%s:  [%s] %s' % (html.json['created_on'], html.json['status'], html.json['body'])
 
-    if len(msgs) > 0:
-      proto.say(channel, response.substitute(msgs[0]))
+    if isinstance(msg, types.UnicodeType):
+        msg = msg.encode('utf-8')
+
+    proto.notice(channel, msg)
 
