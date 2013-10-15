@@ -13,7 +13,7 @@ def cmd_github(proto, _, channel, __):
         log.err(str(e))
         return str(e)
 
-    msg = '%s:  [%s] %s' % (html.json['created_on'], html.json['status'], html.json['body'])
+    msg = '%s:  [%s] %s' % (html.json()['created_on'], html.json()['status'], html.json()['body'])
 
     if isinstance(msg, types.UnicodeType):
         msg = msg.encode('utf-8')

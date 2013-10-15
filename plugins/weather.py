@@ -23,7 +23,7 @@ class Weather(object):
             log.err('Failed to get location for %s: %s' % (ip, str(e)))
             raise IOError(errno.EIO, 'Failed to get location for %s' % (ip,))
 
-        return (req.json['region_code'], req.json['city'])
+        return (req.json()['region_code'], req.json()['city'])
 
     @staticmethod
     def autocomplete(string):
@@ -36,11 +36,11 @@ class Weather(object):
             log.err('Failed to autocomplete "%s": %s' % (string, str(e)))
             raise IOError(errno.EIO, 'Failed to autocomplete "%s"' % (string,))
 
-        if len(req.json['RESULTS']) == 0:
+        if len(req.json()['RESULTS']) == 0:
             log.err('No results for autocompletion of "%s"' % (string,))
             raise IOError(errno.EIO, 'Failed to autocomplete "%s"' % (string,))
 
-        return req.json['RESULTS'][0]['l']
+        return req.json()['RESULTS'][0]['l']
 
 
     def weather(self, user, arg):
@@ -69,12 +69,12 @@ class Weather(object):
 
         try:
             ret = "%s, %s, %s, Humidity: %s, Wind: %s, Feels like: %s" % (
-                req.json['current_observation']['display_location']['full'],
-                req.json['current_observation']['weather'],
-                req.json['current_observation']['temperature_string'],
-                req.json['current_observation']['relative_humidity'],
-                req.json['current_observation']['wind_string'],
-                req.json['current_observation']['feelslike_string'],)
+                req.json()['current_observation']['display_location']['full'],
+                req.json()['current_observation']['weather'],
+                req.json()['current_observation']['temperature_string'],
+                req.json()['current_observation']['relative_humidity'],
+                req.json()['current_observation']['wind_string'],
+                req.json()['current_observation']['feelslike_string'],)
         except KeyError, e:
             log.err('Failed to parse %s: %s' % (str(req.json), e))
             return "IT'S GONNA RAIN!"
