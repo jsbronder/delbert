@@ -2,6 +2,7 @@ import getopt
 import os
 import stat
 import sys
+import time
 import types
 
 import yaml
@@ -76,11 +77,13 @@ class BotFactory(protocol.ClientFactory):
 
     def clientConnectionLost(self, connector, reason):
         log.err("Lost connection: %s" % (reason,))
+        time.sleep(1)
         connector.connect()
 
     def clientConnectionFailed(self, connector, reason):
         log.err("Connection failed: %s" % (reason,))
-        reactor.stop()
+        time.sleep(1)
+        connector.connect()
 
     def _get_plugin_env(self, plugin_name):
         return {
