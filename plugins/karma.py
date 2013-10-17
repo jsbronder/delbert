@@ -92,10 +92,11 @@ def privcmd_karma(proto, user, channel, msg):
 
     for channel in channels:
         karma = KARMA_TRACKER.channel_karma(channel)
+
         if len(karma):
             proto.msg(nick, '%s karma:' % (channel,))
-            for nick, value in karma.items():
-                proto.msg(nick, '    %-20s%d' % (nick + ':', value))
+            for name, value in karma.items():
+                proto.msg(nick, '    %-20s%d' % (name + ':', value))
         else:
             proto.msg(nick, 'No one in %s has karma, lame.' % (channel,))
 
