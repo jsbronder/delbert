@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup as soup
 twitter_auth = None
 
 def tweet(proto, channel, msg_id):
+    global twitter_auth
     if twitter_auth is None:
         auth_url = 'https://api.twitter.com/1.1/account/verify_credentials.json'
         try:
@@ -20,7 +21,6 @@ def tweet(proto, channel, msg_id):
         except Exception, e:
             log.err("Couldn't authenticate with twitter: %s " % (str(e),))
             return
-        global twitter_auth
         twitter_auth = auth
         
     try:
