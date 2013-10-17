@@ -21,6 +21,8 @@ DEFAULT_CONFIG = os.path.join(
     os.environ['HOME'], '.config', 'delbert', 'bot.conf')
 
 class BotProtocol(irc.IRCClient):
+    lineRate = 0.5
+
     @property
     def nickname(self):
         return self.factory.nickname
