@@ -41,7 +41,7 @@ class BotProtocol(irc.IRCClient):
         log.msg("Joined %s" % (channel,))
 
     def userJoined(self, user, channel):
-        log.msg("%s joined %s", (user, channel))
+        log.msg('%s joined %s' % (user, channel))
         self.factory.channels[channel].handle_join(self, user)
 
     def privmsg(self, user, channel, msg):
