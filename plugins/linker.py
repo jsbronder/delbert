@@ -1,5 +1,4 @@
 import re
-import types
 
 import requests
 import requests_oauthlib
@@ -8,64 +7,73 @@ from bs4 import BeautifulSoup as soup
 
 twitter_auth = None
 
-def tweet(proto, channel, msg_id):
-    global twitter_auth
-    if twitter_auth is None:
-        auth_url = 'https://api.twitter.com/1.1/account/verify_credentials.json'
+class Linker(Plugin):
+    def __init__(self, config):
+        super(Linker, self).__init__('linker')
+        self._config = config
+        self._twitter_auth = None
+        self._url_re = re.compile(
+            'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+#]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+        self._twitter_re = re.compile(
+            'http[s]?://(?:www.)?twitter.com/.+/status/([0-9]+)')
+
+        self._setup_twitter()
+
+    def _setup_twitter(self):
+        need = ['app_key', 'app_secret', 'user_token', 'user_secret']
+        for n in need:
+            if not n in self._config:
+                return
+
         try:
-            auth = requests_oauthlib.OAuth1(
-                    config['app_key'],
-                    config['app_secret'],
-                    config['user_token'],
-                    config['user_secret'])
+            self._twitter_auth = requests_oauthlib.OAuth1(
+                    self._config['app_key'],
+                    self._config['app_secret'],
+                    self._config['user_token'],
+                    self._config['user_secret'])
         except Exception, e:
             log.err("Couldn't authenticate with twitter: %s " % (str(e),))
             return
-        twitter_auth = auth
-        
-    try:
-        html  = requests.get('https://api.twitter.com/1.1/statuses/show/%s.json' % (msg_id,), auth=twitter_auth)
-        html.raise_for_status()
-    except requests.exceptions.RequestException, e:
-        log.err("Couldn't get tweet %s: %s" % (msg_id, str(e)))
-        return
 
-    msg =  "%s (%s) tweeted: %s" % (
-        html.json()['user']['name'],
-        html.json()['user']['screen_name'],
-        html.json()['text'])
+    def get_tweet(self, msg_id):
+        """
+        Pull tweet information.
 
-    if isinstance(msg, types.UnicodeType):
-        msg = msg.encode('utf-8')
+        @param msg_id   - id of the tweet.
+        @returns        - formatted string representing the tweet.
+        """
+        try:
+            html  = requests.get(
+                    'https://api.twitter.com/1.1/statuses/show/%s.json' % (msg_id,),
+                    auth=self._twitter_auth)
+            html.raise_for_status()
+        except requests.exceptions.RequestException, e:
+            log.err("Couldn't get tweet %s: %s" % (msg_id, str(e)))
+            return
 
-    proto.say(channel, msg)
+        msg =  "%s (%s) tweeted: %s" % (
+            html.json()['user']['name'],
+            html.json()['user']['screen_name'],
+            html.json()['text'])
 
-def meta_redirect(content):
-    redirect = content.find('meta', attrs={'http-equiv': 'Refresh'})
-    if not redirect:
-        redirect = content.find('meta', attrs={'http-equiv': 'refresh'})
+        return msg
 
-    if redirect:
-        url = redirect['content'].split('url=')[1]
-        return url
+    def get_title(self, url):
+        """
+        Get the title of the specified url.  If there are any redirects, they
+        will first be followed before pulling the title.  Image and pdf links
+        will be ignored.
 
-def passive_linker(proto, channel, _, msg):
-    exp = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+#]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-    urls = re.findall(exp, msg)
-    for url in urls:
-        # Handle twitter links separately
-        twitter_url = re.match('http[s]?://(?:www.)?twitter.com/.+/status/([0-9]+)', url)
-        if twitter_url:
-            tweet(proto, channel, twitter_url.group(1))
-            continue
-
+        @param url  - url to pull title for.
+        @return     - title if found.
+        """
         while True:
             try:
                 html = requests.get(url, verify=False)
                 html.raise_for_status()
             except requests.exceptions.RequestException, e:
                 log.err(str(e))
-                return str(e)
+                return
 
             if html.headers['content-type'].startswith('image'):
                 return
@@ -74,7 +82,7 @@ def passive_linker(proto, channel, _, msg):
             else:
                 parsed = soup(html.text)
                 if parsed.title is None:
-                    redirect = meta_redirect(parsed)
+                    redirect = self._meta_redirect(parsed)
                     if not redirect:
                         log.err("Couldn't not parse content from %s" % (url,))
                         return
@@ -86,9 +94,30 @@ def passive_linker(proto, channel, _, msg):
         msg = 'Link: %s' % (parsed.title.text,)
         msg = msg.strip().replace('\n', ' ')
 
-        if isinstance(msg, types.UnicodeType):
-            msg = msg.encode('utf-8')
+        return msg
 
-        proto.say(channel, msg)
+    def _meta_redirect(content):
+        redirect = content.find('meta', attrs={'http-equiv': 'Refresh'})
+        if not redirect:
+            redirect = content.find('meta', attrs={'http-equiv': 'refresh'})
+
+        if redirect:
+            url = redirect['content'].split('url=')[1]
+            return url
+
+    @irc_passive('get more information about links')
+    def linker(self, user, channel, msg):
+        urls = self._url_re.findall(msg)
+        for url in urls:
+            if self._twitter_auth is not None:
+                twitter_url = self._twitter_re.match(url)
+                if twitter_url:
+                    msg = self.get_tweet(twitter_url.group(1))
+                    self._proto.send_msg(channel, msg)
+                    continue
+
+            msg = self.get_title(url)
+            if msg is not None:
+                self._proto.send_msg(channel, msg)
 
 
