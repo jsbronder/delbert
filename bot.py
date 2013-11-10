@@ -1,4 +1,6 @@
+import functools
 import getopt
+import inspect
 import os
 import stat
 import sys
@@ -11,11 +13,13 @@ from twisted.words.protocols import irc
 from twisted.internet import (
     protocol,
     reactor,
+    threads,
 )
 from twisted.python import log
 from twisted.protocols.policies import TrafficLoggingFactory
 
 import channels
+import plugin
 import utils
 
 DEFAULT_CONFIG = os.path.join(
@@ -24,56 +28,176 @@ DEFAULT_CONFIG = os.path.join(
 class BotProtocol(irc.IRCClient):
     lineRate = 0.5
 
+    def __init__(self, nickname, pw, channels):
+        """
+        Create an irc bot.
+
+        @param nickname - nickname of the bot.
+        @param pw       - password for the bot.
+        @param channels - list of channels the bot should join.
+        """
+        self._nickname = nickname
+        self._pw = pw
+        self._channels = channels
+        self._command_char = '!'
+
     @property
     def nickname(self):
-        return self.factory.nickname
+        """
+        Bot nickname
+        """
+        return self._nickname
 
     def _log_callback(self, *args, **kwds):
-        if hasattr(args[0], 'printTraceback'):
-            args[0].printTraceback()
-        log.msg(args[1], system='BotProtocol')
+        if hasattr(args[1], 'printTraceback'):
+            args[1].printTraceback()
+        log.msg(args[0], system=kwds['system'] if 'system' in kwds else 'BotProtocol')
 
     def signedOn(self):
         log.msg("Signed on")
-        self.msg('nickserv', 'identify %s %s' %
-            (self.factory.nickname, self.factory.pw))
-        for channel in [c for c in self.factory.channels.keys() if not c == self.nickname]:
+        self.msg('nickserv', 'identify %s %s' % (self._nickname, self._pw))
+        for channel in [c for c in self._channels.keys() if not c == self._nickname]:
             self.join(channel)
+
+    def send_msg(self, target, msg):
+        """
+        Send a message to a user or a channel
+
+        @param target   - user or channel to send a message to.
+        @param msg      - message to send.
+        """
+        if isinstance(msg, types.UnicodeType):
+            msg = msg.encode('utf-8')
+        self.msg(target, msg)
+
+    def send_notice(self, channel, msg):
+        """
+        Send a notice to a user or a channel
+
+        @param target   - user or channel to send a notice to.
+        @param msg      - notice to send.
+        """
+        if isinstance(msg, types.UnicodeType):
+            msg = msg.encode('utf-8')
+        self.notice(channel, msg)
+
+    def _call(self, *args, **kwds):
+        """
+        Defer a method to a thread.  All arguments and keywords are passed
+        to the method aside from the following:
+
+        Keywords:
+            @param cb   - callback when method finishes with success.
+            @param eb   - callback when method finishes with error.
+        """
+        cb = kwds.pop('cb', None)
+        eb = kwds.pop('eb', None)
+
+        th = threads.deferToThread(*args, **kwds)
+
+        if cb is not None:
+            th.addCallback(cb)
+
+        if eb is not None:
+            th.addErrback(eb)
 
     def joined(self, channel):
         log.msg("Joined %s" % (channel,))
 
     def userJoined(self, user, channel):
         log.msg('%s joined %s' % (user, channel))
-        self.factory.channels[channel].handle_join(self, user)
+
+        nick = utils.get_nick(user)
+
+        for name, f in self._channels[channel].user_joins.items():
+            eb = functools.partial(self._log_callback, '<%s> error' % (name,), system=channel)
+            self._call(f, nick, channel, eb=eb)
 
     def privmsg(self, user, channel, msg):
-        self.factory.channels[channel].handle_msg(self, user, msg)
+        if not channel in self._channels:
+            return
+
+        if msg.startswith(self._command_char):
+            cmd = msg[1:]
+            try:
+                cmd, args = cmd.split(" ", 1)
+            except ValueError:
+                args = ""
+
+            if cmd == 'help':
+                self._help(channel, args[0] if len(args) else '')
+            elif cmd == 'passives':
+                self._help(channel, args[0] if len(args) else '', 'passives')
+            elif cmd == 'user_joins':
+                self._help(channel, args[0] if len(args) else '', 'user_joins')
+            else:
+                self._cmd(user, channel, cmd, args)
+
+        elif not channel == self._nickname:
+            for name, f in self._channels[channel].passives.items():
+                eb = functools.partial(
+                        self._log_callback,
+                        'passive %s failed' % (name,),
+                        system=channel)
+                self._call(f, user, channel, msg, eb=eb)
+
+    def _cmd(self, user, channel, cmd, args):
+        """
+        Respond to an irc command.
+
+        @param user     - user calling command.
+        @param channel  - channel user is calling command from.
+        @param args     - command arguments.
+        """
+        f = self._channels[channel].commands.get(cmd, None)
+        if f is not None:
+            cb = functools.partial(self._log_callback, '!%s completed' % (cmd,), system=channel)
+            eb = functools.partial(self._log_callback, '!%s error' % (cmd,), system=channel)
+            self._call(f, user, channel, args, cb=cb, eb=eb)
+
+    def _help(self, channel, search, type='commands'):
+        """
+        Respond to the 'help' command.
+
+        Checks the list of commands registered for this channel and returns
+        the help text for each command if it starts with the search parameter.
+
+        @param channel  - channel in which help was called.
+        @param search   - command to search for.  If an empty string then every
+                          registered command will be listed.
+        @param type     - type of command to get help for.  Valid types are
+                          commands, passives or user_joins.
+        """
+        mapping = getattr(self._channels[channel], type, {})
+        names = sorted(mapping.keys())
+        for name in [n for n in names if n.startswith(search)]:
+            self.send_notice(channel, '%s:  %s' % (name, mapping[name].help))
 
 class BotFactory(protocol.ClientFactory):
-    protocol = BotProtocol
-
     def __init__(self, config):
-        self.command_char = '!'
         self._config = config
         self.nickname = config['nick']
         self.pw = config['pass']
         self.dbdir = config['dbdir']
 
         self.channels = {
-            self.nickname: channels.Channel(self.nickname, self.command_char),
+            self.nickname: channels.Channel(self.nickname, {
+                'load_passives': False,
+                'load_user_joins': False}),
         }
-        self.channels.update({name: channels.Channel(name, self.command_char)
-                for name in config['channels'].keys()})
 
-        self.plugins = []
-        self.commands = {}
-        self.priv_commands = {}
-        self.user_joined = {}
-        self.passive = {}
+        for channel, config in config['channels'].items():
+            self.channels[channel] = channels.Channel(
+                    channel,
+                    config if config is not None else {})
 
+        self._plugins = []
+        self._load_plugins()
 
-        self._load_plugins(config['channels'])
+    def buildProtocol(self, address):
+        proto = BotProtocol(self.nickname, self.pw, self.channels)
+        _ = [p.initialize(self.nickname, proto) for p in self._plugins]
+        return proto
 
     def clientConnectionLost(self, connector, reason):
         log.err("Lost connection: %s" % (reason,))
@@ -85,76 +209,41 @@ class BotFactory(protocol.ClientFactory):
         time.sleep(1)
         connector.connect()
 
-    def _get_plugin_env(self, plugin_name):
+    def _get_plugin_env(self):
         return {
             'get_nick': utils.get_nick,
             'get_host': utils.get_host,
             'dbdir': self.dbdir,
-            'config': self._config.get(plugin_name, {})
+            'Plugin': plugin.Plugin,
+            'irc_command': plugin.irc_command,
+            'irc_passive': plugin.irc_passive,
+            'irc_user_join': plugin.irc_user_join,
         }
 
-    def _load_plugins(self, channel_config, path = 'plugins'):
-        plugins = {}
+    def _load_plugins(self, path = 'plugins'):
+        def is_plugin(obj):
+            return (type(obj) == type
+                and obj != plugin.Plugin
+                and plugin.Plugin in inspect.getmro(obj))
 
         for pfile in os.listdir(path):
             if pfile.endswith('.py') and not pfile.startswith('__'):
                 pname = pfile[:-3]
+
                 try:
-                    env = self._get_plugin_env(pname)
+                    env = self._get_plugin_env()
                     execfile(os.path.join(path, pfile), env)
 
                 except ImportError, e:
                     log.err("Failed to log plugin '%s': %s" % (pname, e))
                     continue
-                else:
-                    log.msg("Loaded plugin '%s'" % (pname,))
 
-                self.plugins.append(env)
-
-                plugins[pname] = {
-                    'cmds': [],
-                    'passive': [],
-                    'user_join': [],
-                    'privcmds': [],
-                }
-
-                for name, obj in env.items():
-                    if type(obj) != types.FunctionType:
-                        continue
-
-                    elif name == 'init':
-                        obj()
-
-                    elif name.startswith('cmd_'):
-                        plugins[pname]['cmds'].append((name[4:], obj))
-
-                    elif name.startswith('passive_'):
-                        plugins[pname]['passive'].append((name[8:], obj))
-
-                    elif name.startswith('user_joined_cmd_'):
-                        plugins[pname]['user_join'].append((name[16:], obj))
-
-                    elif name.startswith('privcmd_'):
-                        plugins[pname]['privcmds'].append((name[8:], obj))
+                for obj in [obj for obj in env.values() if is_plugin(obj)]:
+                    log.msg("Loaded %s.%s" % (pname, obj.__name__))
+                    self._plugins.append(obj(self._config.get(pname, {})))
 
         for channel in self.channels.values():
-            for plugin, objs in plugins.items():
-                if (channel.name != self.nickname
-                        and not plugin in channel_config[channel.name]['plugins']):
-                    continue
-
-                if channel.name != self.nickname:
-                    for name, obj in objs['cmds']:
-                        channel.register_cmd(name, obj)
-
-                    for name, obj in objs['passive']:
-                        channel.register_passive(name, obj)
-
-                    for name, obj in objs['user_join']:
-                        channel.register_user_join(name, obj)
-                else:
-                    for name, obj in objs['privcmds']:
-                        channel.register_cmd(name, obj)
+            _ = [channel.register_plugin(p) for p in self._plugins]
 
 
 def parse_config(path):
@@ -200,13 +289,14 @@ ARGUMENTS:
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hc:', ['help', 'config='])
+        opts, args = getopt.getopt(sys.argv[1:], 'hc:t:',
+            ['help', 'config=', 'traffic='])
     except getopt.GetoptError, e:
         print (str(e))
         sys.exit(1)
 
     config_path = DEFAULT_CONFIG
-    traffic_log = False
+    traffic_log = None
 
     for o, a in opts:
         if o in ('-h', '--help'):
@@ -227,8 +317,8 @@ def main():
 
     bot = BotFactory(config)
 
-    if traffic_log:
-        lf = TrafficLoggingFactory(bot, 'irc')
+    if traffic_log is not None:
+        lf = TrafficLoggingFactory(bot, traffic_log)
         reactor.connectTCP(config['server'], config['port'], lf)
     else:
         reactor.connectTCP(config['server'], config['port'], bot)

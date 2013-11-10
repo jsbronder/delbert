@@ -1,24 +1,24 @@
-from twisted.internet import threads
+import functools
+
 from twisted.python import log
 
 class Channel(object):
-    def __init__(self, name, command_char):
+    def __init__(self, name, config):
         """
-        Create a handler for channel messages.
+        Configuration for a channel.
 
-        @param name         - name of the channel.
-        @param command_char - command character.
+        @param name     - name of the channel.
+        @param config   - configuration for the channel.
+
+        Configuration is a dictionary mapping plugin names to a list of
+        commands, passives and user joins to load from the plugin.  If
+        unspecified, every command for the plugin is loaded.
         """
         self._name = name
-        self._command_char = command_char
-        self._cmds = {}
-        self._passive = {}
-        self._user_join = {}
-
-    def _log_callback(self, *args, **kwds):
-        if hasattr(args[0], 'printTraceback'):
-            args[0].printTraceback()
-        log.msg(args[1], system=self._name)
+        self._config = config
+        self._commands = {}
+        self._passives = {}
+        self._user_joins = {}
 
     @property
     def name(self):
@@ -28,87 +28,69 @@ class Channel(object):
         return self._name
 
     @property
-    def cmds(self):
+    def commands(self):
         """
-        List of names of registered commands
+        Mapping of command name to command method.
         """
-        return self._cmds.keys()
+        return self._commands
 
-    def register_cmd(self, name, func):
+    @property
+    def passives(self):
         """
-        Register a command for this channel.
-
-        @param name - name of the command
-        @param func - command function.  Signature should be:
-                      (proto, user, channel, args)
+        Mapping of passive name to passive method.
         """
-        if not name in self._cmds:
-            self._cmds[name] = []
-        self._cmds[name].append(func)
-        log.msg('Added command %s' % (name,), system=self._name)
+        return self._passives
 
-    def register_passive(self, name, func):
+    @property
+    def user_joins(self):
         """
-        Register a passive command for this channel.
-
-        @param name - name of the passive command.
-        @param func - command function.  Signature should be:
-                      (proto, channel, user, msg)
+        Mapping of user join callback name to method.
         """
-        if not name in self._passive:
-            self._passive[name] = []
-        self._passive[name].append(func)
-        log.msg('Added passive %s' % (name,), system=self._name)
+        return self._user_joins
 
-    def register_user_join(self, name, func):
+    def register_plugin(self, plugin):
         """
-        Register a command to be executed on user join.
+        Register a plugin with this channel.  The channel configuration will
+        be used to decide which methods should be used from the plugin.
 
-        @param name - name of the command.
-        @param func - command function.  Signature should be:
-                      (proto, channel, user)
+        @param plugin   - plugin to load.
         """
-        if not name in self._user_join:
-            self._user_join[name] = []
-        self._user_join[name].append(func)
-        log.msg('Added user_join %s' % (name,), system=self._name)
+        info = functools.partial(log.msg, system=self.name)
+        err = functools.partial(log.err, system=self.name)
 
-    def handle_msg(self, proto, user, msg):
-        """
-        Handle a new message to the channel.  If the message is a
-        registered command or passive callback, it will be called.
+        pc = self._config.get(plugin.name, {})
+        if not pc.get('load', True):
+            info('Skipping plugin %s' % (plugin.name,))
+            return
 
-        @param proto    - IRC protocol
-        @param user     - full user identifier
-        @param msg      - user input
-        """
-        if msg.startswith(self._command_char):
-            cmd = msg[1:]
-            try:
-                cmd, args = cmd.split(" ", 1)
-            except ValueError:
-                args = ""
+        cmds = pc.get('commands', plugin.commands.keys())
+        passives = pc.get('passives', plugin.passives.keys())
+        user_joins = pc.get('user_joins', plugin.user_joins.keys())
 
-            for func in self._cmds.get(cmd, []):
-                th = threads.deferToThread(func, proto, user, self._name, args)
-                th.addCallback(self._log_callback, '<%s> completed' % (cmd,))
-                th.addErrback(self._log_callback, '<%s> error' % (cmd,))
-        else:
-            for name, funcs in self._passive.items():
-                for func in funcs:
-                    th = threads.deferToThread(func, proto, self._name, user, msg)
-                    th.addErrback(self._log_callback, '<%s> error' % (name,))
+        if self._config.get('load_commands', True):
+            for f in cmds:
+                if f in self._commands:
+                    err('Duplicate command %s' % (f,))
+                self._commands[f] = plugin.commands[f]
 
-    def handle_join(self, proto, user):
-        """
-        Handle a new user joining the channel.
+            if len(cmds):
+                info('%s commands:  %s' % (plugin.name, self._commands.keys(),))
 
-        @param proto    - IRC protocol
-        @param user     - full user identifier
-        """
-        for name, funcs in self._user_join.items():
-            for func in funcs:
-                th = threads.deferToThread(func, proto, self._name, user)
-                th.addCallback(self._log_callback, '<%s> completed' % (name,))
-                th.addErrback(self._log_callback, '<%s> error' % (name,))
+        if self._config.get('load_passives', True):
+            for f in passives:
+                if f in self._passives:
+                    err('Duplicate passive command %s' % (f,))
+                self._passives[f] = plugin.passives[f]
+
+            if len(passives):
+                info('%s passives:  %s' % (plugin.name, self._passives.keys(),))
+
+        if self._config.get('load_user_joins', True):
+            for f in user_joins:
+                if f in self._user_joins:
+                    err('Duplicate user_join command %s' % (f,))
+                self._user_joins[f] = plugin.user_joins[f]
+
+            if len(user_joins):
+                info('%s user joins:  %s' % (plugin.name, self._user_joins.keys(),))
 
