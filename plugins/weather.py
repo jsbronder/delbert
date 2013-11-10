@@ -4,18 +4,28 @@ import types
 import requests
 from twisted.python import log
 
-INSTANCE = None
+class Weather(Plugin):
+    """
+    Plugin that handles looking up weather at various locations.
+    """
 
-class Weather(object):
-    def __init__(self):
-        try:
+    def __init__(self, config={}):
+        super(Weather, self).__init__('weather')
+        self._api_key = None
+
+        if 'api_key' in config:
             self._api_key = config['api_key']
-        except:
+        else:
             log.err('No "weather.api_key" specified in config')
-            raise
 
     @staticmethod
     def geoip(ip):
+        """
+        Lookup a physical location based on ip address.
+
+        @param ip   - ip address to lookup.
+        @return     - tuple (region_code, city) based on ip address.
+        """
         try:
             req = requests.get('http://freegeoip.net/json/%s' % (ip,))
             req.raise_for_status()
@@ -27,6 +37,12 @@ class Weather(object):
 
     @staticmethod
     def autocomplete(string):
+        """
+        Autocomplete a string to the best fit location.
+
+        @param string   - base string to use for lookup.
+        @return         - best fit location based on specified string.
+        """
         try:
             req = requests.get(
                 'http://autocomplete.wunderground.com/aq',
@@ -42,54 +58,69 @@ class Weather(object):
 
         return req.json()['RESULTS'][0]['l']
 
+    def get_weather(self, location):
+        """
+        Get weather for a specified wunderground location.
 
-    def weather(self, user, arg):
-        if len(arg) == 0:
-            host = get_host(user)
-            if '/' in host:
-                return "I can't look up a masked host, so, IT'S GONNA RAIN!"
-
-            try:
-                arg = self.geoip(get_host(user))
-            except IOError:
-                return "IT'S GONNA RAIN!"
-
+        @location   - wunderground specific mapping to a location.
+        @return     - mapping of weather types to current conditions.
+        """
         try:
             url = 'http://api.wunderground.com/api/%s/conditions%s.json' % (
-                    self._api_key, self.autocomplete(arg))
+                    self._api_key, location)
         except IOError:
-            return "IT'S GONNA RAIN!"
+            return
 
         try:
             req = requests.get(url)
             req.raise_for_status()
         except requests.exceptions.RequestException, e:
-            log.err('Failed to get weather for "%s"' % (arg,))
-            return "IT'S GONNA RAIN!"
+            log.err(str(e))
+            return
+
+        return req.json()
+
+    @irc_command('get weather for specified location or based your ip')
+    def weather(self, user, channel, args):
+        send_to = get_nick(user) if channel == self.nickname else channel
+
+        if args == '':
+            host = get_host(user)
+            if '/' in host:
+                self._proto.send_msg(send_to, "I can't look up a masked host, so, IT'S GONNA RAIN!")
+                return
+
+            try:
+                args = self.geoip(get_host(user))
+            except IOError:
+                self._proto.send_msg(send_to, "IT'S GONNA RAIN!")
+                return
+        else:
+            args = args.split(' ')[0]
+
+        if self._api_key is None:
+            self._proto.send_msg(send_to, 'Cannot lookup weather without a wunderground api key')
+            return
+
+        try:
+            location = self.autocomplete(args)
+            weather = self.get_weather(location)
+        except IOError:
+            self._proto.send_msg(send_to, "IT'S GONNA RAIN!")
+            return
 
         try:
             ret = "%s, %s, %s, Humidity: %s, Wind: %s, Feels like: %s" % (
-                req.json()['current_observation']['display_location']['full'],
-                req.json()['current_observation']['weather'],
-                req.json()['current_observation']['temperature_string'],
-                req.json()['current_observation']['relative_humidity'],
-                req.json()['current_observation']['wind_string'],
-                req.json()['current_observation']['feelslike_string'],)
+                weather['current_observation']['display_location']['full'],
+                weather['current_observation']['weather'],
+                weather['current_observation']['temperature_string'],
+                weather['current_observation']['relative_humidity'],
+                weather['current_observation']['wind_string'],
+                weather['current_observation']['feelslike_string'],)
         except KeyError, e:
-            log.err('Failed to parse %s: %s' % (str(req.json), e))
-            return "IT'S GONNA RAIN!"
+            log.err('Failed to parse %s: %s' % (weather, e))
+            self._proto.send_msg(send_to, "IT'S GONNA RAIN!")
+            return
 
-        return ret
-
-
-def init():
-    global INSTANCE
-    INSTANCE = Weather()
-
-def cmd_weather(proto, user, channel, msg):
-    ret = INSTANCE.weather(user, msg)
-    if isinstance(ret, types.UnicodeType):
-        ret = ret.encode('utf-8')
-
-    proto.msg(channel, ret)
+        self._proto.send_msg(send_to, ret)
 
