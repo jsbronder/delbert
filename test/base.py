@@ -29,10 +29,16 @@ def load_plugin(name, obj_name, config={}, *args, **kwds):
 
 class TestProto(bot.BotProtocol):
     def __init__(self, plugins):
-        channels = {TEST_CHANNEL: TestChannel(plugins)}
+        priv_channel = channels.Channel(TEST_NICK, {})
+        _ = [priv_channel.register_plugin(p) for p in plugins]
+
+        channel_map = {
+            TEST_CHANNEL: TestChannel(plugins),
+            TEST_NICK: priv_channel,
+        }
         _ = [p.initialize(TEST_NICK, self) for p in plugins]
         self._msgs = []
-        bot.BotProtocol.__init__(self, TEST_NICK, 'pw', channels)
+        bot.BotProtocol.__init__(self, TEST_NICK, 'pw', channel_map)
 
     @property
     def msgs(self):

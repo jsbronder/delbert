@@ -7,8 +7,9 @@ import base
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import bot
-import plugin
 import channels
+import plugin
+import utils
 
 class TestPlugin(plugin.Plugin):
     def __init__(self):
@@ -17,7 +18,7 @@ class TestPlugin(plugin.Plugin):
     @plugin.irc_command('say_f help')
     def say_f(self, user, channel, args):
         if channel == self.nickname:
-            self._proto.send_msg(user, 'secret f')
+            self._proto.send_msg(utils.get_nick(user), 'secret f')
         else:
             self._proto.send_msg(channel, 'f')
 
@@ -115,10 +116,10 @@ class PluginTester(unittest.TestCase):
         self.assertEqual(1, len(self._proto.msgs))
         self.assertEqual(self._proto.msgs[0], ('msg', base.TEST_CHANNEL, 'cmd1'))
 
-    def privchannel(self):
+    def test_privchannel(self):
         self._proto.privmsg('tester', base.TEST_NICK, '!say_f')
         self.assertEqual(1, len(self._proto.msgs))
-        self.assertEqual(self._proto.msgs[0], ('msg', 'tester', 'secretf'))
+        self.assertEqual(self._proto.msgs[0], ('msg', 'tester', 'secret f'))
 
 
 def main():
