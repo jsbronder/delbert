@@ -55,6 +55,23 @@ class SourceTester(unittest.TestCase):
         self._proto.privmsg('tester', base.TEST_CHANNEL, 'make %sblah' % (base.TEST_NICK,))
         self.assertEqual(0, len(self._proto.msgs))
 
+    def test_no_passive5(self):
+        self._proto.privmsg('tester', base.TEST_CHANNEL, '%s' % (base.TEST_NICK,))
+        self.assertEqual(0, len(self._proto.msgs))
+
+    def test_no_passive6(self):
+        self._proto.privmsg('tester', base.TEST_CHANNEL, ' %s' % (base.TEST_NICK,))
+        self.assertEqual(0, len(self._proto.msgs))
+
+    def test_no_passive7(self):
+        self._proto.privmsg('tester', base.TEST_CHANNEL, ' %s ' % (base.TEST_NICK,))
+        self.assertEqual(0, len(self._proto.msgs))
+
+    def test_no_passive8(self):
+        self._proto.privmsg('tester', base.TEST_CHANNEL, '%s shouldblah' % (base.TEST_NICK,))
+        self.assertEqual(0, len(self._proto.msgs))
+
+
     def cmd(self):
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!source')
         self.assertEqual(1, len(self._proto.msgs))

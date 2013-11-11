@@ -20,6 +20,7 @@ class Source(Plugin):
 
         post_verbs = [
             'should',
+            'shouldn\'t',
             'needs',
         ]
         pre_verbs = [
@@ -40,7 +41,8 @@ class Source(Plugin):
         ]
         self._responses = config.get('responses', responses)
 
-        self._re = None
+        self._pre_re = None
+        self._post_re = None
 
         if seed:
             random.seed(seed)
@@ -51,15 +53,18 @@ class Source(Plugin):
         super(Source, self).initialize(nickname, proto)
         pre = '|'.join(self._pre_verbs)
         post = '|'.join(self._post_verbs)
-        self._re = re.compile('(^|(%s)\s+|\s+)%s($|\s+|\s+(%s))' % (
-                pre, nickname, post))
+        self._pre_re = re.compile('((%s)\s+)%s(\s+|$)' % (pre, nickname))
+        self._post_re = re.compile('(^|\s+)%s(\s+(%s)\s)' % (nickname, post))
 
     @irc_passive('help user with feature request')
     def request(self, user, channel, msg):
-        if self._re is None:
-            return
+        search = None
 
-        search = self._re.search(msg)
+        if self._pre_re is not None:
+            search = self._pre_re.search(msg)
+        if search is None and self._post_re is not None:
+            search = self._post_re.search(msg)
+
         if search is not None:
             to = get_nick(user) if channel == self.nickname else channel
             self._proto.send_msg(
