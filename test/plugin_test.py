@@ -22,6 +22,13 @@ class TestPlugin(plugin.Plugin):
         else:
             self._proto.send_msg(channel, 'f')
 
+    @plugin.irc_command('say_g help')
+    def say_g(self, user, channel, args):
+        if channel == self.nickname:
+            self._proto.send_msg(utils.get_nick(user), 'secret g')
+        else:
+            self._proto.send_msg(channel, 'g')
+
     @plugin.irc_command('notice_f help')
     def notice_f(self, user, channel, args):
         self._proto.send_notice(channel, 'f')
@@ -79,13 +86,23 @@ class PluginTester(unittest.TestCase):
 
     def test_help(self):
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!help')
-        self.assertEqual(3, len(self._proto.msgs))
+        self.assertEqual(4, len(self._proto.msgs))
         self.assertEqual(
                 self._proto.msgs,
                 [
                     ('notice', base.TEST_CHANNEL, 'cmd1:  cmd1 help'),
                     ('notice', base.TEST_CHANNEL, 'notice_f:  notice_f help'),
-                    ('notice', base.TEST_CHANNEL, 'say_f:  say_f help')
+                    ('notice', base.TEST_CHANNEL, 'say_f:  say_f help'),
+                    ('notice', base.TEST_CHANNEL, 'say_g:  say_g help'),
+                ],)
+
+    def test_help2(self):
+        self._proto.privmsg('tester', base.TEST_CHANNEL, '!help say')
+        self.assertEqual(2, len(self._proto.msgs))
+        self.assertEqual(self._proto.msgs,
+                [
+                    ('notice', base.TEST_CHANNEL, 'say_f:  say_f help'),
+                    ('notice', base.TEST_CHANNEL, 'say_g:  say_g help'),
                 ],)
 
     def test_help_passives(self):

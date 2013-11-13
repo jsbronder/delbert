@@ -120,16 +120,16 @@ class BotProtocol(irc.IRCClient):
         if msg.startswith(self._command_char):
             cmd = msg[1:]
             try:
-                cmd, args = cmd.split(" ", 1)
+                cmd, args = cmd.split(' ', 1)
             except ValueError:
-                args = ""
+                args = '' 
 
             if cmd == 'help':
-                self._help(channel, args[0] if len(args) else '')
+                self._help(channel, args)
             elif cmd == 'passives':
-                self._help(channel, args[0] if len(args) else '', 'passives')
+                self._help(channel, args, 'passives')
             elif cmd == 'user_joins':
-                self._help(channel, args[0] if len(args) else '', 'user_joins')
+                self._help(channel, args, 'user_joins')
             else:
                 self._cmd(user, channel, cmd, args)
 
@@ -168,6 +168,7 @@ class BotProtocol(irc.IRCClient):
         @param type     - type of command to get help for.  Valid types are
                           commands, passives or user_joins.
         """
+        search = search.split(' ')[0]
         mapping = getattr(self._channels[channel], type, {})
         names = sorted(mapping.keys())
         for name in [n for n in names if n.startswith(search)]:
