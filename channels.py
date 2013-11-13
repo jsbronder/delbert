@@ -74,7 +74,7 @@ class Channel(object):
                 self._commands[f] = plugin.commands[f]
 
             if len(cmds):
-                info('%s commands:  %s' % (plugin.name, self._commands.keys(),))
+                info('%s commands:  %s' % (plugin.name, cmds))
 
         if self._config.get('load_passives', True):
             for f in passives:
@@ -83,7 +83,7 @@ class Channel(object):
                 self._passives[f] = plugin.passives[f]
 
             if len(passives):
-                info('%s passives:  %s' % (plugin.name, self._passives.keys(),))
+                info('%s passives:  %s' % (plugin.name, passives))
 
         if self._config.get('load_user_joins', True):
             for f in user_joins:
@@ -92,5 +92,5 @@ class Channel(object):
                 self._user_joins[f] = plugin.user_joins[f]
 
             if len(user_joins):
-                info('%s user joins:  %s' % (plugin.name, self._user_joins.keys(),))
+                info('%s user joins:  %s' % (plugin.name, user_joins))
 
