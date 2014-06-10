@@ -84,7 +84,7 @@ class Linker(Plugin):
                 if parsed.title is None:
                     redirect = self._meta_redirect(parsed)
                     if not redirect:
-                        log.err("Couldn't not parse content from %s" % (url,))
+                        log.err("Couldn't parse content from %s" % (url,))
                         return
                     else:
                         url = redirect
@@ -96,6 +96,7 @@ class Linker(Plugin):
 
         return msg
 
+    @staticmethod
     def _meta_redirect(content):
         redirect = content.find('meta', attrs={'http-equiv': 'Refresh'})
         if not redirect:
