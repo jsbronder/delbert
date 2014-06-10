@@ -1,3 +1,4 @@
 *.pyc
 *.swp
 test/db/weather-api-key
+virtualenv
