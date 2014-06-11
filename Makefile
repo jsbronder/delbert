@@ -6,9 +6,9 @@ TESTS = $(wildcard test/*_test.py)
 .PHONY: test
 
 virtualenv/bin/python:
-	$(VIRTUALENV) delbert-env
+	$(VIRTUALENV) virtualenv
 
-virtualenv: requirements.txt
+virtualenv: requirements.txt virtualenv/bin/python
 	$(ACTIVATE); pip install $$(<requirements.txt)
 
 test:
