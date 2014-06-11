@@ -18,6 +18,10 @@ class UDTester(unittest.TestCase):
             self._proto.msgs[0][2],
             'test:  A process for testing things')
 
+    def test_fail_msg(self):
+        self._proto.privmsg('tester', base.TEST_CHANNEL, '!ud aaoihfeoifheofiehfoeifhe')
+        self.assertEqual(0, len(self._proto.msgs))
+
 def main():
     unittest.main()
 
