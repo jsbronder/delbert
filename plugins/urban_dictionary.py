@@ -37,13 +37,12 @@ class UrbanDictionary(Plugin):
                 get_nick(user),)
             self._proto.send_msg(send_to, msg)
         else:
-            terms = args.split()
-            for term in terms:
-                try:
-                    definition = self.query(term)
-                except NoDefinition:
-                    continue
+            terms = '+'.join(args.split())
+            try:
+                definition = self.query(terms)
                 self._proto.send_msg(send_to, '%s:  %s' % (
-                    term,
+                    args,
                     definition))
+            except NoDefinition:
+                self._proto.send_msg(send_to, "No idea :(")
 
