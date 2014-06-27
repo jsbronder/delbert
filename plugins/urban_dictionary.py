@@ -39,9 +39,9 @@ class UrbanDictionary(Plugin):
         else:
             terms = '+'.join(args.split())
             try:
-                definition = self.query(term)
+                definition = self.query(terms)
                 self._proto.send_msg(send_to, '%s:  %s' % (
-                    term,
+                    args,
                     definition))
             except NoDefinition:
                 self._proto.send_msg(send_to, "No idea :(")
