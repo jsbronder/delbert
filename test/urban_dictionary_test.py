@@ -24,7 +24,7 @@ class UDTester(unittest.TestCase):
 
     def test_fail_msg(self):
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!ud aaoihfeoifheofiehfoeifhe')
-        self.assertEqual(0, len(self._proto.msgs))
+        self.assertEqual('No idea :(', self._proto.msgs[0][2])
 
 def main():
     unittest.main()
