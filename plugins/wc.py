@@ -7,6 +7,7 @@ class WorldCup(Plugin):
     @irc_command('Get current score from world cup')
     def wc(self, user, channel, args):
         try:
+            send_to = get_nick(user) if channel == self.nickname else channel
             response = requests.get('http://worldcup.sfg.io/matches/current')
             results = response.json()
             for result in results:
@@ -19,6 +20,7 @@ class WorldCup(Plugin):
                         home_goals,
                         away_goals,
                         away_team)
-                self._proto.send_msg(channel, msg)
+                self._proto.send_notice(channel, msg)
+
         except Exception as e:
-            self._proto.send_msg(channel, 'unable to retrieve result')
+            self._proto.send_notice(channel, 'unable to retrieve result')
