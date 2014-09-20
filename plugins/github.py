@@ -15,6 +15,7 @@ class GithubHook(resource.Resource):
     def __init__(self):
         resource.Resource.__init__(self)
         self._push_handlers = set()
+        self._issue_handlers = set()
 
     def register_push_handler(self, callback):
         """
@@ -33,6 +34,23 @@ class GithubHook(resource.Resource):
         """
         self._push_handlers.remove(callback)
 
+    def register_issue_handler(self, callback):
+        """
+        Register a handler for issue events
+
+        @param callback - callback for issue events.  The function should
+                          accept a dictionary which describes the event
+        """
+        self._issue_handlers.add(callback)
+
+    def unregister_issue_handler(self, callback):
+        """
+        Unregister a issue event handler
+
+        @param callback - callback to unregister
+        """
+        self._issue_handlers.remove(callback)
+
     def render_POST(self, req):
         event = req.getHeader('X-Github-Event')
         if event is None:
@@ -48,6 +66,8 @@ class GithubHook(resource.Resource):
         try:
             if event == 'push':
                 _ = [cb(data) for cb in self._push_handlers]
+            elif event == 'issues':
+                _ = [cb(data) for cb in self._issue_handlers]
         except Exception:
             log.err()
 
@@ -64,6 +84,7 @@ class Github(Plugin):
         if 'listen_port' in self._config:
             self._handler = GithubHook()
             self._handler.register_push_handler(self.handle_push)
+            self._handler.register_issue_handler(self.handle_issue)
             site = server.Site(self._handler)
             reactor.listenTCP(self._config['listen_port'], site)
 
@@ -139,6 +160,39 @@ class Github(Plugin):
 
         for channel in channels:
             _ = [self._proto.send_notice(channel, msg) for msg in msgs]
+
+    def handle_issue(self, data):
+        """
+        Handle github issue events
+
+        @param data - dictionary describing the opened event.
+        """
+        action = data.get('action')
+        if action is None or action != 'opened':
+            return
+
+        repo = data['repository']['full_name']
+        log.msg('Got issue opened event for %s' % (repo,))
+
+        if not repo in self._repos:
+            return
+
+        channels = [channel
+                for channel, events in self._repos[repo].items()
+                if 'issues' in events]
+
+        log.msg('%s' % (channels,))
+        if len(channels) == 0:
+            return
+
+        msg = '[%s] %s opened issue %d: %s -- %s' % (
+                repo,
+                data['issue']['user']['login'],
+                data['issue']['number'],
+                data['issue']['title'],
+                self.shorten(data['issue']['url']))
+
+        _ = [self._proto.send_notice(channel, msg) for channel in channels]
 
     def _push_msgs(self, repo, data):
         """

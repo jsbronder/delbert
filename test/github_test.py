@@ -97,6 +97,52 @@ commit_data = """
 }
 """
 
+issue_opened_data = """
+{
+  "action": "opened",
+  "issue": {
+    "url": "https://api.github.com/repos/jsbronder/fzsl/issues/2",
+    "labels_url": "https://api.github.com/repos/jsbronder/fzsl/issues/2/labels{/name}",
+    "comments_url": "https://api.github.com/repos/jsbronder/fzsl/issues/2/comments",
+    "events_url": "https://api.github.com/repos/jsbronder/fzsl/issues/2/events",
+    "html_url": "https://github.com/jsbronder/fzsl/issues/2",
+    "id": 43301282,
+    "number": 2,
+    "title": "issue-title",
+    "user": {
+      "login": "jsbronder",
+      "id": 65322
+    },
+    "state": "open",
+    "locked": false,
+    "assignee": null,
+    "milestone": null,
+    "comments": 0,
+    "created_at": "2014-09-20T05:20:52Z",
+    "updated_at": "2014-09-20T05:20:52Z",
+    "closed_at": null,
+    "body": ""
+  },
+  "repository": {
+    "id": 24253229,
+    "name": "test-hooks",
+    "full_name": "test-user/test-hooks",
+    "owner": {
+      "login": "test-user"
+    },
+    "private": false,
+    "html_url": "https://github.com/test-user/test-hooks",
+    "description": "testing webhooks",
+    "forks": 0,
+    "open_issues": 2,
+    "watchers": 0,
+    "default_branch": "master"
+  },
+  "sender": {
+    "login": "jsbronder"
+  }
+}
+"""
 
 class GithubTester(unittest.TestCase):
     """
@@ -106,7 +152,7 @@ class GithubTester(unittest.TestCase):
         config = {
             'repos': {
                 'test-user/test-hooks': {
-                    base.TEST_CHANNEL: ['push']
+                    base.TEST_CHANNEL: ['push', 'issues']
                 },
             },
         }
@@ -126,13 +172,21 @@ class GithubTester(unittest.TestCase):
         self.assertIsNotNone(self._re.search(self._proto.msgs[0][2]))
 
     def test_webhook_push(self):
-        data = json.loads(commit_data) 
+        data = json.loads(commit_data)
         self._plugin.handle_push(data)
         self.assertEqual(2, len(self._proto.msgs))
         self.assertIn('pushed 1 commit to', self._proto.msgs[0][2])
         self.assertIn('<shorturl>', self._proto.msgs[1][2])
         self.assertIn('a commit message', self._proto.msgs[1][2])
         self.assertIn('a96dbcb', self._proto.msgs[1][2])
+
+    def test_issue_webhook(self):
+        data = json.loads(issue_opened_data)
+        self._plugin.handle_issue(data)
+        self.assertEqual(1, len(self._proto.msgs))
+        self.assertIn(
+                'jsbronder opened issue 2: issue-title -- <shorturl>',
+                self._proto.msgs[0][2])
 
 
 def main():
