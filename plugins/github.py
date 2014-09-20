@@ -3,7 +3,7 @@ import json
 import requests
 from twisted.python import log
 
-from twisted.web import (server, resource, http)
+from twisted.web import (server, resource)
 from twisted.internet import reactor
 
 class GithubHook(resource.Resource):
@@ -75,9 +75,9 @@ class GithubHook(resource.Resource):
 
 
 class Github(Plugin):
-    def __init__(self, config={}):
+    def __init__(self, config=None):
         super(Github, self).__init__('github')
-        self._config = config
+        self._config = config if config is not None else {}
         self._hook = None
         self._repos = self._config.get('repos', {})
 
