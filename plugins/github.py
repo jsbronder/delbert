@@ -167,7 +167,7 @@ class Github(Plugin):
             msgs.append('    <%s> %s (%s)  %s' % (
                 commit['id'][:7],
                 header,
-                commit['author']['username'],
+                commit['author'].get('username', commit['author']['email']),
                 self.shorten(commit['url']),))
 
         return msgs
