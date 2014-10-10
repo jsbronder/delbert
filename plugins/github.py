@@ -205,6 +205,13 @@ class Github(Plugin):
         msgs = []
         n_commits = len(data['commits'])
 
+        if n_commits == 0:
+            msgs.append('[%s] %s deleted branch %s' % (
+                    repo,
+                    data['pusher']['name'],
+                    data['ref'].replace('refs/heads/', '')))
+            return msgs
+
         msgs.append('[%s] %s pushed %d commit%s to %s:' % (
             repo,
             data['pusher']['name'],
