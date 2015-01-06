@@ -1,6 +1,6 @@
 EXTRA_FILES = db/cah-black.txt \
 			  db/cah-white.txt \
-			  db/sprint.xml
+			  db/sprint.yaml
 
 PACKAGE = $(shell python setup.py --name)
 VERSION = $(shell python setup.py --version)
