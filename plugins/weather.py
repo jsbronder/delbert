@@ -27,7 +27,7 @@ class Weather(Plugin):
         @return     - tuple (region_code, city) based on ip address.
         """
         try:
-            req = requests.get('http://freegeoip.net/json/%s' % (ip,))
+            req = requests.get('http://www.telize.com/geoip/%s' % (ip,))
             req.raise_for_status()
         except requests.exceptions.RequestException, e:
             log.err('Failed to get location for %s: %s' % (ip, str(e)))
