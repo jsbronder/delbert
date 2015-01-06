@@ -95,8 +95,6 @@ class Weather(Plugin):
             except IOError:
                 self._proto.send_msg(send_to, "IT'S GONNA RAIN!")
                 return
-        else:
-            args = args.split(' ')[0]
 
         if self._api_key is None:
             self._proto.send_msg(send_to, 'Cannot lookup weather without a wunderground api key')
