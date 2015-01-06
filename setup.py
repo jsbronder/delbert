@@ -22,6 +22,7 @@ setuptools.setup(
         package_data = {
           '': ['*.rst', 'db/*', 'LICENSE'],
         },
+        scripts=['bin/delbert'],
         install_requires=['beautifulsoup', 'pyyaml', 'requests', 'requests-oauthlib', 'twisted',],
         classifiers=[
             'Development Status :: 3 - Alpha',

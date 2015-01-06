@@ -1,0 +1,7 @@
+#!/usr/bin/python
+
+import delbert
+
+if __name__ == '__main__':
+    delbert.main()
+
