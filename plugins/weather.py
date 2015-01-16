@@ -80,6 +80,29 @@ class Weather(Plugin):
 
         return req.json()
 
+    def get_forecast(self, location):
+        """
+        Get the 3 day forecast for a specified wunderground location.
+
+        @param location - wunderground specific mapping to a location.
+        @return         - map of forecast,  see
+                          http://www.wunderground.com/weather/api/d/docs?d=data/forecast&MR=1
+        """
+        try:
+            url = 'http://api.wunderground.com/api/%s/forecast%s.json' % (
+                    self._api_key, location)
+        except IOError:
+            return
+
+        try:
+            req = requests.get(url)
+            req.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            log.err(str(e))
+            return
+
+        return req.json()['forecast']
+
     def _get_user_location(self, user, channel, args):
         """
         Lookup the request location.  If the user passed any arguments, try to
@@ -153,4 +176,25 @@ class Weather(Plugin):
             return
 
         self._proto.send_msg(send_to, ret)
+
+    @irc_command('get forecast for specified location or based on your ip')
+    def forecast(self, user, channel, args):
+        location = self._get_user_location(user, channel, args)
+        if location is None:
+            return
+
+        send_to = get_nick(user) if channel == self.nickname else channel
+
+        try:
+            forecast = self.get_forecast(location)
+        except IOError:
+            self._proto.send_msg(send_to, 'Nope, no forecast for you')
+
+        
+        for day in forecast['txt_forecast']['forecastday']:
+            try:
+                self._proto.send_notice(send_to, '%-15s %s' % (day['title'] + ':', day['fcttext']))
+            except KeyError as e:
+                log.err('Failed to parse %s: %s' % (forecast, e))
+                return
 
