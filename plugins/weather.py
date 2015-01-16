@@ -80,20 +80,34 @@ class Weather(Plugin):
 
         return req.json()
 
-    @irc_command('get weather for specified location or based your ip')
-    def weather(self, user, channel, args):
+    def _get_user_location(self, user, channel, args):
+        """
+        Lookup the request location.  If the user passed any arguments, try to
+        autocomplete based on those, otherwise fallback to running geoip on the
+        users host.
+
+        On errors snide remarks^B^Bmessages will be sent to user.
+
+        @param user     - full username
+        @param channel  - current channel
+        @param args     - any arguments passed by the user
+        @return         - A location string fit to be passed to the wunderground
+                          API or None on Failure.
+        """
         send_to = get_nick(user) if channel == self.nickname else channel
 
         if args == '':
             host = get_host(user)
             if '/' in host:
-                self._proto.send_msg(send_to, "I can't look up a masked host, so, IT'S GONNA RAIN!")
+                self._proto.send_msg(send_to, 'I hear the weather is nice in maskedhostville')
                 return
 
             try:
                 args = self.geoip(get_host(user))
             except IOError:
-                self._proto.send_msg(send_to, "IT'S GONNA RAIN!")
+                self._proto.send_msg(
+                        send_to,
+                        'Lucky stiff, the feds can\'t trace your ip.  Or at least the free service I use can\'t.')
                 return
 
         if self._api_key is None:
@@ -102,9 +116,27 @@ class Weather(Plugin):
 
         try:
             location = self.autocomplete(args)
+        except IOError, e:
+            self._proto.send_msg(
+                    send_to,
+                    'Nice try, "%s" isn\'t a real location' % (' '.join(args),))
+            return
+
+        return location
+
+
+    @irc_command('get weather for specified location or based your ip')
+    def weather(self, user, channel, args):
+        location = self._get_user_location(user, channel, args)
+        if location is None:
+            return
+
+        send_to = get_nick(user) if channel == self.nickname else channel
+
+        try:
             weather = self.get_weather(location)
         except IOError:
-            self._proto.send_msg(send_to, "IT'S GONNA RAIN!")
+            self._proto.send_msg(send_to, 'Meh, look it up yourself')
             return
 
         try:

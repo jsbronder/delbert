@@ -61,13 +61,13 @@ class WeatherTester(unittest.TestCase):
     def test_masked_host(self):
         self._proto.privmsg('tester!blah@some/mask', base.TEST_CHANNEL, '!weather')
         self.assertEqual(1, len(self._proto.msgs))
-        self.assertTrue(self._proto.msgs[0][2].endswith('IT\'S GONNA RAIN!'))
+        self.assertTrue(self._proto.msgs[0][2].endswith('maskedhostville'))
 
     @unittest.skipIf(not os.path.exists(API_FILE), 'No wunderground api key file found')
     def test_fail_autocomplete(self):
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!weather aohicehcaoiehfoaiehfe')
         self.assertEqual(1, len(self._proto.msgs))
-        self.assertEqual(self._proto.msgs[0], ('msg', base.TEST_CHANNEL, 'IT\'S GONNA RAIN!'))
+        self.assertTrue(self._proto.msgs[0][2].startswith('Nice try,'))
 
 
 def main():
