@@ -162,10 +162,12 @@ class GithubTester(unittest.TestCase):
         self._re = re.compile('^[0-9-]{10}T[0-9:]{8}Z:  \[[a-z]*\]')
 
 
+    @base.net_test
     def test_query(self):
         m = self._plugin.status
         self.assertIsNotNone(self._re.search(m))
 
+    @base.net_test
     def test_msg(self):
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!github')
         self.assertEqual(1, len(self._proto.msgs))

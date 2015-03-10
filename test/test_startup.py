@@ -7,10 +7,12 @@ class StartupTester(unittest.TestCase):
         self._startup = base.load_plugin('startup.py', 'Startup')
         self._proto = base.TestProto([self._startup])
 
+    @base.net_test
     def test_query(self):
         m = self._startup.query_startup()
         self.assertTrue(m.startswith('So, basically, it'))
 
+    @base.net_test
     def test_msg(self):
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!startup')
         self.assertEqual(1, len(self._proto.msgs))

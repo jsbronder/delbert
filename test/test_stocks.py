@@ -9,6 +9,7 @@ class StocksTester(unittest.TestCase):
         self._stocks, self._exc = base.load_plugin_and_excs('stocks.py', 'Stocks')
         self._proto = base.TestProto([self._stocks])
 
+    @base.net_test
     def test_quote(self):
         m = self._stocks.get_quote('AAPL')
         self.assertIn('Status', m)

@@ -1,6 +1,8 @@
 import inspect
+import functools
 import os
 import sys
+import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'delbert')))
 
@@ -103,4 +105,12 @@ class TestChannel(channels.Channel):
         super(TestChannel, self).__init__(TEST_CHANNEL, config)
         _ = [self.register_plugin(p) for p in plugins]
 
+def net_test(func):
+    net_tests = os.environ.get('DELBERT_RUN_NET_TESTS') is not None
 
+    @unittest.skipIf(not net_tests, 'Network tests are disabled')
+    @functools.wraps(func)
+    def wrapper(*args, **kwds):
+        return func(*args, **kwds)
+
+    return wrapper

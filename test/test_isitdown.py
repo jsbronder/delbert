@@ -23,6 +23,7 @@ class IsItDownTester(unittest.TestCase):
         site = self._plugin.parse_site('site.com/images')
         self.assertEqual(site, 'site.com')
 
+    @base.net_test
     def test_query(self):
         site = self._plugin.parse_site('http://downforeveryoneorjustme.com/')
         up = self._plugin.query(site)
@@ -31,6 +32,7 @@ class IsItDownTester(unittest.TestCase):
         up = self._plugin.query('sitedoesnotexist.com')
         self.assertFalse(up)
 
+    @base.net_test
     def test_msg(self):
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!isitdown http://google.com/blah')
         self.assertEqual(1, len(self._proto.msgs))

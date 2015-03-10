@@ -91,57 +91,67 @@ class WeatherTester(unittest.TestCase):
         self._ip = '209.6.43.0'
 
     @unittest.skipIf(not os.path.exists(API_FILE), 'No wunderground api key file found')
+    @base.net_test
     def test_autocomplete(self):
         m = self._plugin.autocomplete('boston')
         self.assertEqual(m, self._boston)
 
     @unittest.skipIf(not os.path.exists(API_FILE), 'No wunderground api key file found')
+    @base.net_test
     def test_autocomplete_multistring(self):
         m = self._plugin.autocomplete('newry me')
         self.assertEqual(m, self._newry_me)
 
     @unittest.skipIf(not os.path.exists(API_FILE), 'No wunderground api key file found')
+    @base.net_test
     def test_get_weather(self):
         m = self._plugin.get_weather(self._boston)
         loc = m['current_observation']['display_location']['full']
         self.assertEqual(loc, 'Boston, MA')
 
     @unittest.skipIf(not os.path.exists(API_FILE), 'No wunderground api key file found')
+    @base.net_test
     def test_geoip(self):
         m = self._plugin.geoip(self._ip)
         self.assertEqual(m, ('MA', 'Somerville'))
 
     @unittest.skipIf(not os.path.exists(API_FILE), 'No wunderground api key file found')
+    @base.net_test
     def test_msg(self):
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!weather boston')
         self.assertEqual(1, len(self._proto.msgs))
         self.assertTrue(self._proto.msgs[0][2].startswith('Boston, MA, '))
 
     @unittest.skipIf(not os.path.exists(API_FILE), 'No wunderground api key file found')
+    @base.net_test
     def test_msg_multistring(self):
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!weather newry me')
         self.assertEqual(1, len(self._proto.msgs))
         self.assertTrue(self._proto.msgs[0][2].startswith('Newry, ME, '))
 
     @unittest.skipIf(not os.path.exists(API_FILE), 'No wunderground api key file found')
+    @base.net_test
     def test_host(self):
         self._proto.privmsg('tester!blah@%s' % (self._ip,), base.TEST_CHANNEL, '!weather')
         self.assertEqual(1, len(self._proto.msgs))
         self.assertTrue(self._proto.msgs[0][2].startswith('Somerville, MA, '))
 
     @unittest.skipIf(not os.path.exists(API_FILE), 'No wunderground api key file found')
+    @base.net_test
     def test_masked_host(self):
         self._proto.privmsg('tester!blah@some/mask', base.TEST_CHANNEL, '!weather')
         self.assertEqual(1, len(self._proto.msgs))
         self.assertTrue(self._proto.msgs[0][2].endswith('maskedhostville'))
 
     @unittest.skipIf(not os.path.exists(API_FILE), 'No wunderground api key file found')
+    @base.net_test
     def test_fail_autocomplete(self):
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!weather aohicehcaoiehfoaiehfe')
         self.assertEqual(1, len(self._proto.msgs))
         self.assertTrue(self._proto.msgs[0][2].startswith('Nice try,'))
 
     @unittest.skipIf(not os.path.exists(API_FILE), 'No wunderground api key file found')
+    @base.net_test
     def test_get_forecast(self):
         m = self._plugin.get_forecast(self._boston)
         self.assertEqual(8, len(m['txt_forecast']['forecastday']))
