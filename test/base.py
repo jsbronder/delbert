@@ -1,3 +1,4 @@
+import inspect
 import os
 import sys
 
@@ -9,23 +10,56 @@ import plugin
 import utils
 
 plugin_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../plugins'))
+plugin_env = {
+    'get_nick': utils.get_nick,
+    'get_host': utils.get_host,
+    'dbdir': '/tmp/',
+    'Plugin': plugin.Plugin,
+    'irc_command': plugin.irc_command,
+    'irc_passive': plugin.irc_passive,
+    'irc_user_join': plugin.irc_user_join,
+}
 
 TEST_CHANNEL = '#test'
 TEST_NICK = 'testbot'
 
-def load_plugin(name, obj_name, config={}, *args, **kwds):
-    env = {
-        'get_nick': utils.get_nick,
-        'get_host': utils.get_host,
-        'dbdir': '/tmp/',
-        'Plugin': plugin.Plugin,
-        'irc_command': plugin.irc_command,
-        'irc_passive': plugin.irc_passive,
-        'irc_user_join': plugin.irc_user_join,
-    }
 
+def load_plugin(name, obj_name, config={}, *args, **kwds):
+    """
+    Load a plugin.
+
+    @param name     - filename of plugin
+    @param obj_name - name of the plugin within the file to load
+    @param config   - dictionary of extra configuration to pass to the plugin
+    @param *args    - extra arguments to pass to the plugin
+    @param *kwds    - extra keyword arguments to pass to the plugin.
+
+    @return - an instance of the plugin
+    """
+    env = plugin_env.copy()
     execfile(os.path.join(plugin_dir, name), env)
     return env[obj_name](config, *args, **kwds)
+
+def load_plugin_and_excs(name, obj_name, config={}, *args, **kwds):
+    """
+    Load a plugin and any exceptions defined by the plugin.  This is useful for
+    unittesting to make sure that certain exceptions are raised.
+
+    @param name     - filename of plugin
+    @param obj_name - name of the plugin within the file to load
+    @param config   - dictionary of extra configuration to pass to the plugin
+    @param *args    - extra arguments to pass to the plugin
+    @param *kwds    - extra keyword arguments to pass to the plugin.
+
+    @return - Tuple containing the plugin and a dictionary containing all exceptions
+              defined in the plugin file ({exc_name: exc_class}).
+    """
+    env = plugin_env.copy()
+    execfile(os.path.join(plugin_dir, name), env)
+
+    plugin = env[obj_name](config, *args, **kwds)
+    excs = {symbol:cls for symbol, cls in env.items() if inspect.isclass(cls) and issubclass(cls, Exception)}
+    return (plugin, excs)
 
 class TestProto(bot.BotProtocol):
     def __init__(self, plugins):
