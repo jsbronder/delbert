@@ -1,4 +1,7 @@
+import json
 import unittest
+
+import responses
 
 import base
 
@@ -8,26 +11,48 @@ class UDTester(unittest.TestCase):
         self._proto = base.TestProto([self._plugin])
 
     @base.net_test
-    def test_query(self):
+    def test_query_real(self):
         m = self._plugin.query('test')
         self.assertEqual('A process for testing things', m)
 
-    @base.net_test
+    @responses.activate
+    def test_query(self):
+        ret = {'definition': 'test response'}
+        base.create_json_response('.*urbandictionary.*', {'list': [ret]})
+
+        m = self._plugin.query('test')
+        self.assertEqual('test response', m)
+
+    @responses.activate
     def test_msg(self):
+        ret = {'definition': 'test response'}
+        base.create_json_response('.*urbandictionary.*', {'list': [ret]})
+
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!ud test')
         self.assertEqual(1, len(self._proto.msgs))
-        self.assertEqual(
-            self._proto.msgs[0][2],
-            'test:  A process for testing things')
+        self.assertEqual(self._proto.msgs[0][2], 'test:  test response')
 
-    @base.net_test
+    @responses.activate
     def test_compound_msg(self):
+        ret = {'definition': 'test response'}
+
+        def f(request):
+            req = request.url.split('=')[1]
+            if req == 'compound+message':
+                return (200, {}, json.dumps({'list': [ret]}))
+
+        responses.add_callback(responses.GET,
+                url='http://api.urbandictionary.com/v0/define',
+                callback=f)
+
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!ud compound message')
         self.assertEqual(1, len(self._proto.msgs))
+        self.assertEqual(self._proto.msgs[0][2], 'compound message:  test response')
 
-    @base.net_test
+    @responses.activate
     def test_fail_msg(self):
-        self._proto.privmsg('tester', base.TEST_CHANNEL, '!ud aaoihfeoifheofiehfoeifhe')
+        base.create_json_response('.*urbandictionary.*', {})
+        self._proto.privmsg('tester', base.TEST_CHANNEL, '!ud blah')
         self.assertEqual('No idea :(', self._proto.msgs[0][2])
 
 def main():
