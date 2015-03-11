@@ -1,8 +1,13 @@
 import json
 import re
 import unittest
+import warnings
+
+import responses
 
 import base
+
+warnings.simplefilter('ignore')
 
 commit_data = """
 {
@@ -159,19 +164,34 @@ class GithubTester(unittest.TestCase):
         self._plugin = base.load_plugin('github.py', 'Github', config=config)
         self._plugin.shorten = lambda x : '<shorturl>'
         self._proto = base.TestProto([self._plugin])
-        self._re = re.compile('^[0-9-]{10}T[0-9:]{8}Z:  \[[a-z]*\]')
-
 
     @base.net_test
-    def test_query(self):
+    def test_query_real(self):
         m = self._plugin.status
-        self.assertIsNotNone(self._re.search(m))
+        self.assertIsNotNone(re.search('^[0-9-]{10}T[0-9:]{8}Z:  \[[a-z]*\]', m))
 
-    @base.net_test
+    @responses.activate
+    def test_query(self):
+        status = {
+                'status': 'good',
+                'body': 'Everything operation normally',
+                'created_on': '2000-01-01T01:02:03Z'}
+        base.create_json_response('.*github\.com.*', status)
+
+        m = self._plugin.status
+        self.assertEqual(m, '%s:  [%s]' % (status['created_on'], status['status']))
+
+    @responses.activate
     def test_msg(self):
+        status = {
+                'status': 'good',
+                'body': 'Everything operation normally',
+                'created_on': '2000-01-01T01:02:03Z'}
+        base.create_json_response('.*github.com.*', status)
+
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!github')
         self.assertEqual(1, len(self._proto.msgs))
-        self.assertIsNotNone(self._re.search(self._proto.msgs[0][2]))
+        self.assertEqual(self._proto.msgs[0][2], '%s:  [%s]' % (status['created_on'], status['status']))
 
     def test_webhook_push(self):
         data = json.loads(commit_data)
