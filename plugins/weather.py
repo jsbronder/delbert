@@ -190,7 +190,6 @@ class Weather(Plugin):
         except IOError:
             self._proto.send_msg(send_to, 'Nope, no forecast for you')
 
-        
         for day in forecast['txt_forecast']['forecastday']:
             try:
                 self._proto.send_notice(send_to, '%-15s %s' % (day['title'] + ':', day['fcttext']))
