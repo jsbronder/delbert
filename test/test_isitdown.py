@@ -1,5 +1,7 @@
 import unittest
 
+import responses
+
 import base
 
 class IsItDownTester(unittest.TestCase):
@@ -24,21 +26,33 @@ class IsItDownTester(unittest.TestCase):
         self.assertEqual(site, 'site.com')
 
     @base.net_test
-    def test_query(self):
-        site = self._plugin.parse_site('http://downforeveryoneorjustme.com/')
-        up = self._plugin.query(site)
+    def test_query_real(self):
+        up = self._plugin.query('http://google.com')
         self.assertTrue(up)
 
-        up = self._plugin.query('sitedoesnotexist.com')
+        up = self._plugin.query('http://aceoiuhcaeoiacheoichajefoi.com')
         self.assertFalse(up)
 
-    @base.net_test
+    @responses.activate
+    def test_query(self):
+        base.create_response('http://downforeveryoneorjustme.com/blah', '')
+        base.create_response('http://downforeveryoneorjustme.com/halb', 'not just you!')
+
+        up = self._plugin.query('blah')
+        self.assertTrue(up)
+
+        up = self._plugin.query('halb')
+        self.assertFalse(up)
+
+    @responses.activate
     def test_msg(self):
-        self._proto.privmsg('tester', base.TEST_CHANNEL, '!isitdown http://google.com/blah')
+        base.create_response('http://downforeveryoneorjustme.com/blah.com', '')
+
+        self._proto.privmsg('tester', base.TEST_CHANNEL, '!isitdown http://blah.com')
         self.assertEqual(1, len(self._proto.msgs))
         self.assertEqual(
                 self._proto.msgs[0][2],
-                'google.com is up')
+                'blah.com is up')
 
 def main():
     unittest.main()
