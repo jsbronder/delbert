@@ -1,5 +1,7 @@
 import unittest
 
+import responses
+
 import base
 
 class StartupTester(unittest.TestCase):
@@ -8,15 +10,24 @@ class StartupTester(unittest.TestCase):
         self._proto = base.TestProto([self._startup])
 
     @base.net_test
-    def test_query(self):
+    def test_query_real(self):
         m = self._startup.query_startup()
         self.assertTrue(m.startswith('So, basically, it'))
 
-    @base.net_test
+    @responses.activate
+    def test_query(self):
+        base.create_response('http://itsthisforthat.com/.*', 'a test')
+
+        m = self._startup.query_startup()
+        self.assertEqual(m, 'A test')
+
+    @responses.activate
     def test_msg(self):
+        base.create_response('http://itsthisforthat.com/.*', 'a test')
+
         self._proto.privmsg('tester', base.TEST_CHANNEL, '!startup')
         self.assertEqual(1, len(self._proto.msgs))
-        self.assertTrue(self._proto.msgs[0][2].startswith('So, basically, it'))
+        self.assertEqual(self._proto.msgs[0][2], 'A test')
 
 def main():
     unittest.main()
