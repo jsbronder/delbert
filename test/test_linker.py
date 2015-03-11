@@ -1,5 +1,7 @@
 import unittest
 
+import responses
+
 import base
 
 class LinkerTester(unittest.TestCase):
@@ -7,29 +9,33 @@ class LinkerTester(unittest.TestCase):
         self._linker = base.load_plugin('linker.py', 'Linker')
         self._proto = base.TestProto([self._linker])
 
-    @base.net_test
+    @responses.activate
     def test_title(self):
-        m = self._linker.get_title('http://www.google.com')
-        self.assertEqual(m, 'Link: Google')
+        base.create_response('http://test.com', '<body><title>blah</title></body>')
+        m = self._linker.get_title('http://test.com')
+        self.assertEqual(m, 'Link: blah')
 
-    @base.net_test
+    @responses.activate
     def test_link(self):
-        self._proto.privmsg('tester', base.TEST_CHANNEL, 'http://www.google.com')
+        base.create_response('http://test.com', '<body><title>blah</title></body>')
+        self._proto.privmsg('tester', base.TEST_CHANNEL, 'http://test.com')
         self.assertEqual(1, len(self._proto.msgs))
-        self.assertEqual(self._proto.msgs[0], ('msg', base.TEST_CHANNEL, 'Link: Google'))
+        self.assertEqual(self._proto.msgs[0], ('msg', base.TEST_CHANNEL, 'Link: blah'))
 
-    @base.net_test
+    @responses.activate
     def test_inside_link(self):
-        self._proto.privmsg('tester', base.TEST_CHANNEL, 'check out http://www.google.com this link')
+        base.create_response('http://test.com', '<body><title>blah</title></body>')
+        self._proto.privmsg('tester', base.TEST_CHANNEL, 'check out http://test.com this link')
         self.assertEqual(1, len(self._proto.msgs))
-        self.assertEqual(self._proto.msgs[0], ('msg', base.TEST_CHANNEL, 'Link: Google'))
+        self.assertEqual(self._proto.msgs[0], ('msg', base.TEST_CHANNEL, 'Link: blah'))
 
-    @base.net_test
+    @responses.activate
     def test_multiple_link(self):
-        self._proto.privmsg('tester', base.TEST_CHANNEL, 'http://www.google.com ' * 2)
+        base.create_response('http://test.com', '<body><title>blah</title></body>')
+        self._proto.privmsg('tester', base.TEST_CHANNEL, 'http://test.com ' * 2)
         self.assertEqual(2, len(self._proto.msgs))
-        self.assertEqual(self._proto.msgs[0], ('msg', base.TEST_CHANNEL, 'Link: Google'))
-        self.assertEqual(self._proto.msgs[1], ('msg', base.TEST_CHANNEL, 'Link: Google'))
+        self.assertEqual(self._proto.msgs[0], ('msg', base.TEST_CHANNEL, 'Link: blah'))
+        self.assertEqual(self._proto.msgs[1], ('msg', base.TEST_CHANNEL, 'Link: blah'))
 
 
 def main():
