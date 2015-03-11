@@ -1,8 +1,12 @@
 import inspect
 import functools
+import json
 import os
+import re
 import sys
 import unittest
+
+import responses
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'delbert')))
 
@@ -114,3 +118,29 @@ def net_test(func):
         return func(*args, **kwds)
 
     return wrapper
+
+def create_json_response(url, resp):
+    """
+    Create a mocked json response for the given url.
+
+    @param url  - regex string representing the urls to match
+    @param resp - dictionary representing the json response
+    """
+    responses.add(responses.GET,
+        re.compile(url),
+        content_type='application/json',
+        body=json.dumps(resp))
+
+def create_response(url, resp):
+    """
+    Create a mocked response for the given url.
+
+    @param url  - regex string representing the urls to match
+    @param resp - text to return as the response content
+    """
+    responses.add(responses.GET,
+        re.compile(url),
+        body=resp)
+
+
+
