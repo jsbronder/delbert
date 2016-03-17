@@ -124,7 +124,7 @@ class Karma(Plugin):
             karma = self.get_karma(c)
             if len(karma):
                 self._proto.send_notice(send_to, '%s karma:' % (c,))
-                for nick, value in karma.items():
+                for nick, value in sorted(karma.items(), key=lambda n, v: v):
                     self._proto.send_notice(send_to, '    %-20s%d' % (nick + ':', value))
             else:
                 self._proto.send_msg(send_to, 'No one in %s has karma, lame.' % (c,))
