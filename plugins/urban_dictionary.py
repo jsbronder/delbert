@@ -1,3 +1,5 @@
+import urllib
+
 import requests
 from twisted.python import log
 
@@ -37,7 +39,7 @@ class UrbanDictionary(Plugin):
                 get_nick(user),)
             self._proto.send_msg(send_to, msg)
         else:
-            terms = '+'.join(args.split())
+            terms = '+'.join(urllib.quote(t) for t in args.split())
             try:
                 definition = self.query(terms)
                 self._proto.send_msg(send_to, '%s:  %s' % (
