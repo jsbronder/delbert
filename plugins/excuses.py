@@ -20,7 +20,7 @@ class Excuses(Plugin):
             log.err(str(e))
             return
 
-        parsed = soup(html.text)
+        parsed = soup(html.text, 'html.parser')
         return parsed.a.text
 
     @irc_command('generate an excuse for why the code is broken/incomplete/failing/holding the president for ransom')

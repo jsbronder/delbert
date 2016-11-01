@@ -80,7 +80,7 @@ class Linker(Plugin):
             elif html.headers['content-type'].startswith('application/pdf'):
                 return
             else:
-                parsed = soup(html.text)
+                parsed = soup(html.text, 'html.parser')
                 if parsed.title is None:
                     redirect = self._meta_redirect(parsed)
                     if not redirect:
