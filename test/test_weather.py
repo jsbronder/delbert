@@ -170,9 +170,10 @@ FAKE_WEATHER = {
 
 class WeatherTester(unittest.TestCase):
     def setUp(self):
-        config = {
-            'api_key': open(API_FILE).read().strip(),
-        }
+        config = {'api_key': ''}
+        if os.path.exists(API_FILE):
+            config['api_key'] = open(API_FILE).read().strip(),
+
         self._plugin = base.load_plugin('weather.py', 'Weather', config=config)
         self._proto = base.TestProto([self._plugin])
         self._boston = '/q/zmw:02101.1.99999'
