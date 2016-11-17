@@ -1,7 +1,12 @@
-beautifulsoup4
-pyyaml
-requests
-requests-oauthlib
-responses
-twisted
+beautifulsoup4==4.5.1
+mock==2.0.0
+oauthlib==2.0.0
+pbr==1.10.0
+PyYAML==3.12
+requests==2.12.1
+requests-oauthlib==0.7.0
+responses==0.5.1
+six==1.10.0
+Twisted==16.5.0
+zope.interface==4.3.2
 
