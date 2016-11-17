@@ -1,4 +1,8 @@
 beautifulsoup4==4.5.1
+constantly==15.1.0
+cookies==2.2.1
+funcsigs==1.0.2
+incremental==16.10.1
 mock==2.0.0
 oauthlib==2.0.0
 pbr==1.10.0
