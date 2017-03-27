@@ -36,6 +36,7 @@ class Trump(Plugin):
                 (("why", "?"), "All I know is what's on the internet."),
                 (("?",), "I love the poorly educated."),
                 (("",), "That was so great."),
+                (("bill", "obamacare", "healthcare"), 'The best thing is to just let it explode.'),
         )
 
         random.seed(seed)
