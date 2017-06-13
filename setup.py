@@ -1,28 +1,31 @@
 #!/usr/bin/env python
 import os
-import setuptools
 import sys
 
-def read(*paths):
-    """Build a file path from *paths* and return the contents."""
-    with open(os.path.join(*paths), 'r') as f:
-        return f.read()
+VERSION = '0.1'
+PACKAGE = 'delbert'
+
+import setuptools
+
+scripts = []
+if os.path.exists('bin/%s' % (PACKAGE,)):
+    scripts = ['bin/%s' % (PACKAGE,)]
 
 setuptools.setup(
-        name='delbert',
-        version=0.1,
+        name=PACKAGE,
+        version=VERSION,
         description='Python/Twisted IRC bot',
         license='BSD',
-        long_description=(read('README.rst')),
+        long_description=open('README.rst').read(),
         author='Justin Bronder',
-        author_email='jsbronder@gmail.com',
-        url='http://github.com/jsbronder/delbert',
+        author_email='jsbronder@cold-front.org',
+        url='http://github.com/jsbronder/%s' % (PACKAGE,),
         keywords='irc bot python twisted',
-        packages=['delbert'],
+        packages=[PACKAGE],
         package_data = {
-          '': ['*.rst', 'db/*', 'LICENSE'],
+            '': ['*.rst', 'db/*', 'LICENSE'],
         },
-        scripts=['bin/delbert'],
+        scripts=scripts,
         install_requires=['beautifulsoup', 'pyyaml', 'requests', 'requests-oauthlib', 'twisted',],
         classifiers=[
             'Development Status :: 3 - Alpha',
@@ -37,5 +40,5 @@ setuptools.setup(
             'Topic :: Communications :: Chat',
             'Topic :: Communications :: Chat :: Internet Relay Chat',
             'Topic :: Utilities',
-        ]
+        ],
 )

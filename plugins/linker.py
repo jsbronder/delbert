@@ -7,13 +7,15 @@ from bs4 import BeautifulSoup as soup
 
 twitter_auth = None
 
-class Linker(Plugin):
+
+class Linker(Plugin):  # noqa: F821
     def __init__(self, config):
         super(Linker, self).__init__('linker')
         self._config = config
         self._twitter_auth = None
         self._url_re = re.compile(
-            'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+#]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+            'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+#]|[!*\(\),]'
+            '|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
         self._twitter_re = re.compile(
             'http[s]?://(?:www.)?twitter.com/.+/status/([0-9]+)')
 
@@ -22,7 +24,7 @@ class Linker(Plugin):
     def _setup_twitter(self):
         need = ['app_key', 'app_secret', 'user_token', 'user_secret']
         for n in need:
-            if not n in self._config:
+            if n not in self._config:
                 return
 
         try:
@@ -43,15 +45,15 @@ class Linker(Plugin):
         @returns        - formatted string representing the tweet.
         """
         try:
-            html  = requests.get(
-                    'https://api.twitter.com/1.1/statuses/show/%s.json' % (msg_id,),
-                    auth=self._twitter_auth)
+            url = 'https://api.twitter.com/1.1/statuses/show/%s.json' % (
+                msg_id,)
+            html = requests.get(url, auth=self._twitter_auth)
             html.raise_for_status()
         except requests.exceptions.RequestException, e:
             log.err("Couldn't get tweet %s: %s" % (msg_id, str(e)))
             return
 
-        msg =  "%s (%s) tweeted: %s" % (
+        msg = "%s (%s) tweeted: %s" % (
             html.json()['user']['name'],
             html.json()['user']['screen_name'],
             html.json()['text'])
@@ -106,7 +108,7 @@ class Linker(Plugin):
             url = redirect['content'].split('url=')[1]
             return url
 
-    @irc_passive('get more information about links')
+    @irc_passive('get more information about links')  # noqa: F821
     def linker(self, user, channel, msg):
         urls = self._url_re.findall(msg)
         for url in urls:
@@ -120,5 +122,3 @@ class Linker(Plugin):
             msg = self.get_title(url)
             if msg is not None:
                 self._proto.send_msg(channel, msg)
-
-

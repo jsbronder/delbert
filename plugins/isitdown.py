@@ -1,7 +1,8 @@
 import requests
 from twisted.python import log
 
-class IsItDown(Plugin):
+
+class IsItDown(Plugin):  # noqa: F821
     def __init__(self, config={}):
         super(IsItDown, self).__init__('isitdown')
         self._config = config
@@ -40,7 +41,8 @@ class IsItDown(Plugin):
 
         return 'not just you!' not in html.text
 
-    @irc_command('check if a site or sites are down for everyone')
+    @irc_command(  # noqa: F821
+        'check if a site or sites are down for everyone')
     def isitdown(self, user, channel, args):
         if len(args):
             urls = args.split(' ')
@@ -52,15 +54,15 @@ class IsItDown(Plugin):
                 msg = '%s is %s' % (site, 'up' if up else 'down')
 
                 if channel == self.nickname:
-                    self._proto.send_msg(get_nick(user), msg)
+                    n = get_nick(user)  # noqa: F821
+                    self._proto.send_msg(n, msg)
                 else:
                     self._proto.send_msg(channel, msg)
         else:
             msg = 'Check if what site or sites are down for everyone?'
 
             if channel == self.nickname:
-                self._proto.send_msg(get_nick(user), msg)
+                n = get_nick(user)  # noqa: F821
+                self._proto.send_msg(n, msg)
             else:
                 self._proto.send_msg(channel, msg)
-
-

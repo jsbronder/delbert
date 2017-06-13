@@ -3,10 +3,12 @@ import urllib
 import requests
 from twisted.python import log
 
+
 class NoDefinition(Exception):
     pass
 
-class UrbanDictionary(Plugin):
+
+class UrbanDictionary(Plugin):  # noqa: F821
     def __init__(self, config={}):
         super(UrbanDictionary, self).__init__('UrbanDictionary')
         self._config = config
@@ -19,7 +21,8 @@ class UrbanDictionary(Plugin):
         @return     - the top definition for the term
         """
         try:
-            html = requests.get('http://api.urbandictionary.com/v0/define?term=%s' % (term,))
+            html = requests.get(
+                'http://api.urbandictionary.com/v0/define?term=%s' % (term,))
         except requests.exceptions.RequestException, e:
             log.err(str(e))
             return
@@ -30,13 +33,16 @@ class UrbanDictionary(Plugin):
         else:
             raise NoDefinition()
 
-    @irc_command('lookup a term on urban dictionary')
+    @irc_command('lookup a term on urban dictionary')  # noqa: F821
     def ud(self, user, channel, args):
-        send_to = get_nick(user) if channel == self.nickname else channel
+        if channel == self.nickname:
+            send_to = get_nick(user)  # noqa: F821
+        else:
+            send_to = channel
 
         if args == '':
-            msg = '%s:  someone who does not even know what they want defined' % (
-                get_nick(user),)
+            msg = "%s:  someone who doesn't know what they want defined" % (
+                get_nick(user),)  # noqa: F821
             self._proto.send_msg(send_to, msg)
         else:
             terms = '+'.join(urllib.quote(t) for t in args.split())
@@ -47,4 +53,3 @@ class UrbanDictionary(Plugin):
                     definition))
             except NoDefinition:
                 self._proto.send_msg(send_to, "No idea :(")
-

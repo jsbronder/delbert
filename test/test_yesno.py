@@ -14,7 +14,7 @@ class YesNoTester(unittest.TestCase):
         answer, image = self._plugin.query()
 
         self.assertIn(answer, ('yes', 'no', 'maybe'))
-        self.assertTrue(image.startswith('http://yesno.wtf/assets/%s' % (answer,)))
+        self.assertTrue(image.startswith('https://yesno.wtf/assets/%s' % (answer,)))
 
     @responses.activate
     def test_query(self):

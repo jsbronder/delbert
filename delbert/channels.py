@@ -2,6 +2,7 @@ import functools
 
 from twisted.python import log
 
+
 class Channel(object):
     def __init__(self, name, config):
         """
@@ -93,4 +94,3 @@ class Channel(object):
 
             if len(user_joins):
                 info('%s user joins:  %s' % (plugin.name, user_joins))
-

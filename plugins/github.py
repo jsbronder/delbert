@@ -6,6 +6,7 @@ from twisted.python import log
 from twisted.web import (server, resource)
 from twisted.internet import reactor
 
+
 class GithubHook(resource.Resource):
     """
     Web handler for github webhooks
@@ -65,16 +66,18 @@ class GithubHook(resource.Resource):
 
         try:
             if event == 'push':
-                _ = [cb(data) for cb in self._push_handlers]
+                for cb in self._push_handlers:
+                    cb(data)
             elif event == 'issues':
-                _ = [cb(data) for cb in self._issue_handlers]
+                for cb in self._issue_handlers:
+                    cb(data)
         except Exception:
             log.err()
 
         return ''
 
 
-class Github(Plugin):
+class Github(Plugin):  # noqa: F821
     def __init__(self, config=None):
         super(Github, self).__init__('github')
         self._config = config if config is not None else {}
@@ -103,10 +106,13 @@ class Github(Plugin):
 
         if html.json()['status'] == 'good':
             return '%s:  [%s]' % (
-                html.json()['created_on'], html.json()['status'])
+                html.json()['created_on'],
+                html.json()['status'])
         else:
             return '%s:  [%s] %s' % (
-                html.json()['created_on'], html.json()['status'], html.json()['body'])
+                html.json()['created_on'],
+                html.json()['status'],
+                html.json()['body'])
 
     @staticmethod
     def shorten(url):
@@ -128,10 +134,10 @@ class Github(Plugin):
         else:
             return url
 
-    @irc_command('return current github status')
+    @irc_command('return current github status')  # noqa: F821
     def github(self, user, channel, args):
         if channel == self.nickname:
-            nick = get_nick(user)
+            nick = get_nick(user)  # noqa: F821
             self._proto.send_notice(nick, self.status)
         else:
             self._proto.send_notice(channel, self.status)
@@ -142,15 +148,19 @@ class Github(Plugin):
 
         @param data - dictionary describing the push event.
         """
-        repo = '%s/%s' % (data['repository']['owner']['name'], data['repository']['name'])
+        repo = '%s/%s' % (
+            data['repository']['owner']['name'],
+            data['repository']['name'])
         log.msg('Got push event for %s' % (repo,))
 
-        if not repo in self._repos:
+        if repo not in self._repos:
             return
 
-        channels = [channel
-                for channel, events in self._repos[repo].items()
-                if 'push' in events]
+        channels = [
+            channel
+            for channel, events in self._repos[repo].items()
+            if 'push' in events
+        ]
 
         log.msg('%s' % (channels,))
         if len(channels) == 0:
@@ -159,7 +169,8 @@ class Github(Plugin):
         msgs = self._push_msgs(repo, data)
 
         for channel in channels:
-            _ = [self._proto.send_notice(channel, msg) for msg in msgs]
+            for msg in msgs:
+                self._proto.send_notice(channel, msg)
 
     def handle_issue(self, data):
         """
@@ -174,12 +185,14 @@ class Github(Plugin):
         repo = data['repository']['full_name']
         log.msg('Got issue opened event for %s' % (repo,))
 
-        if not repo in self._repos:
+        if repo not in self._repos:
             return
 
-        channels = [channel
-                for channel, events in self._repos[repo].items()
-                if 'issues' in events]
+        channels = [
+            channel
+            for channel, events in self._repos[repo].items()
+            if 'issues' in events
+        ]
 
         log.msg('%s' % (channels,))
         if len(channels) == 0:
@@ -192,7 +205,8 @@ class Github(Plugin):
                 data['issue']['title'],
                 self.shorten(data['issue']['url']))
 
-        _ = [self._proto.send_notice(channel, msg) for channel in channels]
+        for channel in channels:
+            self._proto.send_notice(channel, msg)
 
     def _push_msgs(self, repo, data):
         """
@@ -216,7 +230,7 @@ class Github(Plugin):
             repo,
             data['pusher']['name'],
             n_commits,
-            '' if n_commits <=1 else 's',
+            '' if n_commits <= 1 else 's',
             data['ref'].replace('refs/heads/', '')))
 
         for commit in data['commits']:
@@ -232,4 +246,3 @@ class Github(Plugin):
                 self.shorten(commit['url']),))
 
         return msgs
-

@@ -25,6 +25,7 @@ import utils
 DEFAULT_CONFIG = os.path.join(
     os.environ['HOME'], '.config', 'delbert', 'bot.conf')
 
+
 class BotProtocol(irc.IRCClient):
     lineRate = 0.5
 
@@ -51,13 +52,15 @@ class BotProtocol(irc.IRCClient):
     def _log_callback(self, *args, **kwds):
         if hasattr(args[1], 'printTraceback'):
             args[1].printTraceback()
-        log.msg(args[0], system=kwds['system'] if 'system' in kwds else 'BotProtocol')
+        log.msg(
+            args[0],
+            system=kwds['system'] if 'system' in kwds else 'BotProtocol')
 
     def signedOn(self):
         log.msg("Signed on")
         self.msg('nickserv', 'identify %s %s' % (self._nickname, self._pw))
-        for channel in [c for c in self._channels.keys() if not c == self._nickname]:
-            self.join(channel)
+        for c in (c for c in self._channels.keys() if not c == self._nickname):
+            self.join(c)
 
     def send_msg(self, target, msg):
         """
@@ -83,8 +86,8 @@ class BotProtocol(irc.IRCClient):
 
     def _call(self, *args, **kwds):
         """
-        Defer a method to a thread.  All arguments and keywords are passed
-        to the method aside from the following:
+        Defer a method to a thread.  All arguments and keywords are passed to
+        the method aside from the following:
 
         Keywords:
             @param cb   - callback when method finishes with success.
@@ -110,11 +113,14 @@ class BotProtocol(irc.IRCClient):
         nick = utils.get_nick(user)
 
         for name, f in self._channels[channel].user_joins.items():
-            eb = functools.partial(self._log_callback, '<%s> error' % (name,), system=channel)
+            eb = functools.partial(
+                self._log_callback,
+                '<%s> error' % (name,),
+                system=channel)
             self._call(f, nick, channel, eb=eb)
 
     def privmsg(self, user, channel, msg):
-        if not channel in self._channels:
+        if channel not in self._channels:
             return
 
         if msg.startswith(self._command_char):
@@ -122,7 +128,7 @@ class BotProtocol(irc.IRCClient):
             try:
                 cmd, args = cmd.split(' ', 1)
             except ValueError:
-                args = '' 
+                args = ''
 
             if cmd == 'help':
                 self._help(channel, args)
@@ -151,16 +157,22 @@ class BotProtocol(irc.IRCClient):
         """
         f = self._channels[channel].commands.get(cmd, None)
         if f is not None:
-            cb = functools.partial(self._log_callback, '!%s completed' % (cmd,), system=channel)
-            eb = functools.partial(self._log_callback, '!%s error' % (cmd,), system=channel)
+            cb = functools.partial(
+                self._log_callback,
+                '!%s completed' % (cmd,),
+                system=channel)
+            eb = functools.partial(
+                self._log_callback,
+                '!%s error' % (cmd,),
+                system=channel)
             self._call(f, user, channel, args, cb=cb, eb=eb)
 
     def _help(self, channel, search, type='commands'):
         """
         Respond to the 'help' command.
 
-        Checks the list of commands registered for this channel and returns
-        the help text for each command if it starts with the search parameter.
+        Checks the list of commands registered for this channel and returns the
+        help text for each command if it starts with the search parameter.
 
         @param channel  - channel in which help was called.
         @param search   - command to search for.  If an empty string then every
@@ -173,6 +185,7 @@ class BotProtocol(irc.IRCClient):
         names = sorted(mapping.keys())
         for name in [n for n in names if n.startswith(search)]:
             self.send_notice(channel, '%s:  %s' % (name, mapping[name].help))
+
 
 class BotFactory(protocol.ClientFactory):
     def __init__(self, config):
@@ -197,7 +210,8 @@ class BotFactory(protocol.ClientFactory):
 
     def buildProtocol(self, address):
         proto = BotProtocol(self.nickname, self.pw, self.channels)
-        _ = [p.initialize(self.nickname, proto) for p in self._plugins]
+        for p in self._plugins:
+            p.initialize(self.nickname, proto)
         return proto
 
     def clientConnectionLost(self, connector, reason):
@@ -221,11 +235,11 @@ class BotFactory(protocol.ClientFactory):
             'irc_user_join': plugin.irc_user_join,
         }
 
-    def _load_plugins(self, path = 'plugins'):
+    def _load_plugins(self, path='plugins'):
         def is_plugin(obj):
             return (type(obj) == type
-                and obj != plugin.Plugin
-                and plugin.Plugin in inspect.getmro(obj))
+                    and obj != plugin.Plugin
+                    and plugin.Plugin in inspect.getmro(obj))
 
         for pfile in os.listdir(path):
             if pfile.endswith('.py') and not pfile.startswith('__'):
@@ -244,7 +258,8 @@ class BotFactory(protocol.ClientFactory):
                     self._plugins.append(obj(self._config.get(pname, {})))
 
         for channel in self.channels.values():
-            _ = [channel.register_plugin(p) for p in self._plugins]
+            for p in self._plugins:
+                channel.register_plugin(p)
 
 
 def parse_config(path):
@@ -257,27 +272,30 @@ def parse_config(path):
 
     missing = []
     for key in ('server', 'port', 'nick', 'pass'):
-        if not key in config:
+        if key not in config:
             missing.append(key)
 
     if len(missing):
-        raise KeyError("Missing required configuration keys: %s"
-            % ' '.join(missing))
+        raise KeyError("Missing required configuration keys: %s" % (
+            ' '.join(missing),))
 
     if 'dbdir' in config:
         config['dbdir'] = os.path.expanduser(config['dbdir'])
         if not config['dbdir'].startswith('/'):
-            config['dbdir'] = os.path.join(os.path.dirname(path), config['dbdir'])
+            config['dbdir'] = os.path.join(
+                os.path.dirname(path),
+                config['dbdir'])
     else:
         config['dbdir'] = os.path.join(os.path.dirname(path), 'db')
 
     if not os.path.exists(config['dbdir']):
         os.makedirs(config['dbdir'])
     elif not os.path.isdir(config['dbdir']):
-        raise OSError("dbdir '%s' exists but is not a directory" %
-            (config['dbdir'],))
+        raise OSError("dbdir '%s' exists but is not a directory" % (
+            config['dbdir'],))
 
     return config
+
 
 def usage():
     print """%s [ARGUMENTS]
@@ -288,10 +306,14 @@ ARGUMENTS:
     -t, --traffic [FILE]    Log traffic to specified file
 """
 
+
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hc:t:',
-            ['help', 'config=', 'traffic='])
+        opts, args = getopt.getopt(
+            sys.argv[1:],
+            'hc:t:',
+            ['help', 'config=', 'traffic='],
+        )
     except getopt.GetoptError, e:
         print (str(e))
         sys.exit(1)
@@ -329,4 +351,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -3,7 +3,8 @@ import random
 import requests
 from twisted.python import log
 
-class YesNo(Plugin):
+
+class YesNo(Plugin):  # noqa: F821
     def __init__(self, config={}):
         super(YesNo, self).__init__('yesno')
         self._config = config
@@ -25,18 +26,20 @@ class YesNo(Plugin):
         jdict = html.json()
         return (jdict['answer'], jdict['image'])
 
-    @irc_command('query the universe for answers')
+    @irc_command('query the universe for answers')  # noqa: F821
     def yesno(self, user, channel, args):
         answer, image = self.query()
 
         msg = '%s! (%s)' % (answer.upper(), image)
 
         if channel == self.nickname:
-            self._proto.send_msg(get_nick(user), msg)
+            send_to = get_nick(user)  # noqa: F821
         else:
-            self._proto.send_msg(channel, msg)
+            send_to = channel
 
-    @irc_passive('Provide answers to the important questions')
+        self._proto.send_msg(send_to, msg)
+
+    @irc_passive('Provide answers to the important questions')  # noqa: F821
     def provide_answers(self, user, channel, msg):
         words = msg.strip().split()
         chances = sum(word.endswith('?') for word in words)
@@ -49,4 +52,3 @@ class YesNo(Plugin):
 
         if random.random() <= chance:
             self.yesno(user, channel, '')
-

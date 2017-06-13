@@ -1,10 +1,8 @@
-import os
 import random
 import re
 
-from twisted.python import log
 
-class Source(Plugin):
+class Source(Plugin):  # noqa: F821
     def __init__(self, config={}, seed=None):
         """
         Create a referrer to the source.
@@ -16,7 +14,9 @@ class Source(Plugin):
                             responses: list of responses
         """
         super(Source, self).__init__('source')
-        self._source = config.get('url', 'https://github.com/jsbronder/delbert')
+        self._source = config.get(
+            'url',
+            'https://github.com/jsbronder/delbert')
 
         post_verbs = [
             'should',
@@ -56,7 +56,7 @@ class Source(Plugin):
         self._pre_re = re.compile('((%s)\s+)%s(\s+|$)' % (pre, nickname))
         self._post_re = re.compile('(^|\s+)%s(\s+(%s)\s)' % (nickname, post))
 
-    @irc_passive('help user with feature request')
+    @irc_passive('help user with feature request')  # noqa: F821
     def request(self, user, channel, msg):
         search = None
 
@@ -66,14 +66,20 @@ class Source(Plugin):
             search = self._post_re.search(msg)
 
         if search is not None:
-            to = get_nick(user) if channel == self.nickname else channel
+            if channel == self.nickname:
+                to = get_nick(user)  # noqa: F821
+            else:
+                to = channel
             self._proto.send_msg(
-                    to,
-                    '%s, %s' % (
-                        random.choice(self._responses),
-                        self._source))
+                to,
+                '%s, %s' % (
+                    random.choice(self._responses),
+                    self._source))
 
-    @irc_command('show the suggestion box')
+    @irc_command('show the suggestion box')  # noqa: F821
     def source(self, user, channel, args):
-        to = get_nick(user) if channel == self.nickname else channel
+        if channel == self.nickname:
+            to = get_nick(user)  # noqa: F821
+        else:
+            to = channel
         self._proto.send_msg(to, self._source)

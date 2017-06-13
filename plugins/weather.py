@@ -1,10 +1,10 @@
 import errno
-import types
 
 import requests
 from twisted.python import log
 
-class Weather(Plugin):
+
+class Weather(Plugin):  # noqa: F821
     """
     Plugin that handles looking up weather at various locations.
     """
@@ -46,7 +46,7 @@ class Weather(Plugin):
         try:
             req = requests.get(
                 'http://autocomplete.wunderground.com/aq',
-                params = {'query': string})
+                params={'query': string})
             req.raise_for_status()
         except requests.exceptions.RequestException, e:
             log.err('Failed to autocomplete "%s": %s' % (string, str(e)))
@@ -114,47 +114,58 @@ class Weather(Plugin):
         @param user     - full username
         @param channel  - current channel
         @param args     - any arguments passed by the user
-        @return         - A location string fit to be passed to the wunderground
-                          API or None on Failure.
+        @return         - A location string fit to be passed to the
+                          wunderground API or None on Failure.
         """
-        send_to = get_nick(user) if channel == self.nickname else channel
+        if channel == self.nickname:
+            send_to = get_nick(user)  # noqa: F821
+        else:
+            send_to = channel
 
         if args == '':
-            host = get_host(user)
+            host = get_host(user)  # noqa: F821
             if '/' in host:
-                self._proto.send_msg(send_to, 'I hear the weather is nice in maskedhostville')
+                self._proto.send_msg(
+                    send_to,
+                    'I hear the weather is nice in maskedhostville')
                 return
 
             try:
-                args = self.geoip(get_host(user))
+                args = self.geoip(host)
             except IOError:
                 self._proto.send_msg(
-                        send_to,
-                        'Lucky stiff, the feds can\'t trace your ip.  Or at least the free service I use can\'t.')
+                    send_to,
+                    'Lucky stiff, the feds can\'t trace your ip.'
+                    '  Or at least the free service I use can\'t.')
                 return
 
         if self._api_key is None:
-            self._proto.send_msg(send_to, 'Cannot lookup weather without a wunderground api key')
+            self._proto.send_msg(
+                send_to,
+                'Cannot lookup weather without a wunderground api key')
             return
 
         try:
             location = self.autocomplete(args)
-        except IOError, e:
+        except IOError:
             self._proto.send_msg(
-                    send_to,
-                    'Nice try, "%s" isn\'t a real location' % (' '.join(args),))
+                send_to,
+                'Nice try, "%s" isn\'t a real location' % (' '.join(args),))
             return
 
         return location
 
-
-    @irc_command('get weather for specified location or based your ip')
+    @irc_command(  # noqa: F821
+        'get weather for specified location or based your ip')
     def weather(self, user, channel, args):
         location = self._get_user_location(user, channel, args)
         if location is None:
             return
 
-        send_to = get_nick(user) if channel == self.nickname else channel
+        if channel == self.nickname:
+            send_to = get_nick(user)  # noqa: F821
+        else:
+            send_to = channel
 
         try:
             weather = self.get_weather(location)
@@ -177,13 +188,17 @@ class Weather(Plugin):
 
         self._proto.send_msg(send_to, ret)
 
-    @irc_command('get forecast for specified location or based on your ip')
+    @irc_command(  # noqa: F821
+        'get forecast for specified location or based on your ip')
     def forecast(self, user, channel, args):
         location = self._get_user_location(user, channel, args)
         if location is None:
             return
 
-        send_to = get_nick(user) if channel == self.nickname else channel
+        if channel == self.nickname:
+            send_to = get_nick(user)  # noqa: F821
+        else:
+            send_to = channel
 
         try:
             forecast = self.get_forecast(location)
@@ -192,8 +207,9 @@ class Weather(Plugin):
 
         for day in forecast['txt_forecast']['forecastday']:
             try:
-                self._proto.send_notice(send_to, '%-15s %s' % (day['title'] + ':', day['fcttext']))
+                self._proto.send_notice(
+                    send_to,
+                    '%-15s %s' % (day['title'] + ':', day['fcttext']))
             except KeyError as e:
                 log.err('Failed to parse %s: %s' % (forecast, e))
                 return
-

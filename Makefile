@@ -1,37 +1,45 @@
+SHELL = /usr/bin/env bash
+TOPDIR := $(shell readlink -f $(dir $(lastword $(MAKEFILE_LIST))))
+
+PACKAGE := $(shell python setup.py --name)
+TESTS := $(wildcard test/test_*.py)
+VERSION := $(shell python setup.py --version)
+
+MODULE_FILES := $(shell find $(PACKAGE)/ -type f -name '*.py')
+PLUGIN_FILES := $(shell find plugins/ -type f -name '*.py')
+BIN_FILES := $(wildcard bin/*)
+REQUIREMENTS := $(wildcard requirements*.txt)
 EXTRA_FILES = db/cah-black.txt \
 			  db/cah-white.txt \
 			  db/sprint.yaml
 
-PACKAGE = $(shell python setup.py --name)
-VERSION = $(shell python setup.py --version)
-SHELL = /bin/bash
+FLAKE_TARGETS := $(MODULE_FILES:%=flake-%) $(BIN_FILES:%=flake-%) $(PLUGIN_FILES:%=flake-%)
+TEST_TARGETS := $(TESTS:test/test_%.py=test_%)
 
-PYTHON_VERSION ?= $(shell python -c 'import sys;print("%d.%d" % (sys.version_info[0], sys.version_info[1]))')
-VIRTUALENV ?= /usr/bin/env virtualenv
+.PHONY: requirements $(REQUIREMENTS) test $(TEST_TARGETS) install clean
 
-ACTIVATE = source virtualenv$(PYTHON_VERSION)/bin/activate
-REQUIREMENTS = $(shell cat requirements.txt)
-TESTS = $(wildcard test/test_*.py)
-MODULE_FILES = $(wildcard $(PACKAGE)/*.py) $(EXTRA_FILES)
+all: dist
 
-.PHONY: test dist
 
-all: virtualenv$(PYTHON_VERSION)
+requirements: $(REQUIREMENTS)
+$(REQUIREMENTS):
+	@pip install -r $@
+
 
 dist: dist/$(PACKAGE)-$(VERSION).tar.gz
+dist/$(PACKAGE)-$(VERSION).tar.gz: $(MODULE_FILES) setup.py $(EXTRA_FILES)
+	python setup.py sdist
 
 
-virtualenv$(PYTHON_VERSION): requirements.txt
-	@$(VIRTUALENV) --python=python$(PYTHON_VERSION) virtualenv$(PYTHON_VERSION)
-	@if [ -n "$(REQUIREMENTS)" ]; then \
-		$(ACTIVATE); pip install $(REQUIREMENTS); \
-	fi
+flake: $(FLAKE_TARGETS)
+$(FLAKE_TARGETS):
+	flake8 --filename='*' $(@:flake-%=%)
 
-test: virtualenv$(PYTHON_VERSION)
+
+test: flake
 	@failed=""; \
 	for test in $(TESTS); do \
 		echo "Testing $${test#*_}"; \
-		$(ACTIVATE); \
 		python $${test} --verbose; \
 		if [ $$? -ne 0 ]; then \
 			failed+=" $${test}"; \
@@ -44,16 +52,14 @@ test: virtualenv$(PYTHON_VERSION)
 	else \
 		echo "All tests passed."; \
 	fi
+$(TEST_TARGETS):
+	python test/$(@).py -v
 
-dist/$(PACKAGE)-$(VERSION).tar.gz: virtualenv$(PYTHON_VERSION) $(MODULE_FILES) setup.py
-	python setup.py sdist
-
-dev-install: dist/$(PACKAGE)-$(VERSION).tar.gz
-	$(ACTIVATE); pip install --no-deps \
+install: dist
+	pip install --no-deps \
 		--upgrade --force-reinstall --no-index dist/$(PACKAGE)-$(VERSION).tar.gz
 
+
 clean:
-	rm -rf virtualenv[23]*
-	rm -rf build
 	rm -rf dist
 	rm -rf $(PACKAGE).egg-info

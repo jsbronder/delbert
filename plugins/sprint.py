@@ -1,11 +1,11 @@
-import os
 import random
 
 import yaml
 
 from twisted.python import log
 
-class SprintGoals(Plugin):
+
+class SprintGoals(Plugin):  # noqa: F821
     def __init__(self, config={}, seed=None):
         super(SprintGoals, self).__init__('sprint')
 
@@ -39,15 +39,15 @@ class SprintGoals(Plugin):
                     verb=random.choice(self.verbs),
                     noun=random.choice(self.nouns))
         else:
-            return 'What did someone forget to do?  ...  Install the SPRINT text files.'
+            return 'Install the SPRINT text files maybe?'
 
-    @irc_command('generate a sprint goal')
+    @irc_command('generate a sprint goal')  # noqa: F821
     def sprint(self, user, channel, args):
-        nick = get_nick(user)
+        nick = get_nick(user)  # noqa: F821
+
         msg = self.get_msg()
 
         if channel == self.nickname:
             self._proto.send_msg(nick, msg)
         else:
             self._proto.send_msg(channel, msg)
-

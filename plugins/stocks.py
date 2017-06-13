@@ -2,10 +2,12 @@ import requests
 
 from twisted.python import log
 
+
 class InvalidSymbolError(Exception):
     pass
 
-class Stocks(Plugin):
+
+class Stocks(Plugin):  # noqa: F821
     def __init__(self, config=None):
         super(Stocks, self).__init__('stocks')
         self._base_url = 'http://dev.markitondemand.com/Api/v2/'
@@ -13,8 +15,9 @@ class Stocks(Plugin):
 
     def get_quote(self, symbol):
         """
-        Get a stock quote for the specified symbol.  Return is a dictionary containing
-        the information documented at http://dev.markitondemand.com/#doc_quote
+        Get a stock quote for the specified symbol.  Return is a dictionary
+        containing the information documented at
+        http://dev.markitondemand.com/#doc_quote
 
         @param symbol   - symbol for which to lookup quote
         @return         - stock quote
@@ -33,7 +36,8 @@ class Stocks(Plugin):
 
         return html.json()
 
-    @irc_command('Lookup the current quote for the specified ticker symbol')
+    @irc_command(  # noqa: F821
+        'Lookup the current quote for the specified ticker symbol')
     def quote(self, user, channel, args):
         log.msg('Pulling quotes for symbols: %s' % (','.join(args.split())))
 
@@ -51,7 +55,7 @@ class Stocks(Plugin):
                         quote['ChangePercent'])
 
             if channel == self.nickname:
-                self._proto.send_msg(get_nick(user), msg)
+                n = get_nick(user)  # noqa: F821
+                self._proto.send_msg(n, msg)
             else:
                 self._proto.send_notice(channel, msg)
-

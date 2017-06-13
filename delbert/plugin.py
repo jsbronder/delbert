@@ -1,5 +1,6 @@
 import inspect
 
+
 def irc_command(text):
     """
     Declare a method as an irc command.
@@ -11,6 +12,7 @@ def irc_command(text):
         func.help = text
         return func
     return f
+
 
 def irc_passive(text):
     """
@@ -26,6 +28,7 @@ def irc_passive(text):
         return func
     return f
 
+
 def irc_user_join(text):
     """
     Declare a method as a user join callback.  User joins are called
@@ -38,6 +41,7 @@ def irc_user_join(text):
         func.help = text
         return func
     return f
+
 
 class Plugin(object):
     """
@@ -130,4 +134,3 @@ class Plugin(object):
         """
         self._nickname = nickname
         self._proto = proto
-

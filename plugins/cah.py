@@ -1,9 +1,9 @@
-import os
 import random
 
 from twisted.python import log
 
-class CardsAgainstHumanity(Plugin):
+
+class CardsAgainstHumanity(Plugin):  # noqa: F821
     def __init__(self, config={}, seed=None):
         """
         Create a cards against humanity solver.
@@ -20,19 +20,22 @@ class CardsAgainstHumanity(Plugin):
             <question_intro> @BLANK@ <question_outro>
             <question_intro> ...
 
-        A random white card will be chosen for each @BLANK@ or ... in the black card.
+        A random white card will be chosen for each @BLANK@ or ... in the black
+        card.
         """
         super(CardsAgainstHumanity, self).__init__('cah')
         self._white = None
         self._black = None
 
+        def read_cards(path):
+            with open(path) as fp:
+                return [
+                    l for l in fp.readlines()
+                    if not l.startswith('#') and l != '\n']
+
         try:
-            with open(config['black']) as fp:
-                self._black = [l for l in fp.readlines() if not l.startswith('#') and l != '\n']
-
-            with open(config['white']) as fp:
-                self._white = [l for l in fp.readlines() if not l.startswith('#') and l != '\n']
-
+            self._black = read_cards(config['black'])
+            self._white = read_cards(config['white'])
         except IOError, e:
             log.err('Failed to open db files for cah: %s' % (e,))
             self._have_content = False
@@ -77,15 +80,14 @@ class CardsAgainstHumanity(Plugin):
                 ret = ret + ' ... ' + self.white
             return ret
         else:
-            return 'What did someone forget to do?  ...  Install the CAH text files.'
+            return 'Install the CAH text files maybe?'
 
-    @irc_command('generate a cards against humanity solution')
+    @irc_command('generate a cards against humanity solution')   # noqa: F821
     def cah(self, user, channel, args):
-        nick = get_nick(user)
+        nick = get_nick(user)  # noqa: F821
         msg = self.get_msg()
 
         if channel == self.nickname:
             self._proto.send_msg(nick, msg)
         else:
             self._proto.send_msg(channel, msg)
-

@@ -7,7 +7,8 @@ from twisted.python import log
 
 KARMA_TRACKER = None
 
-class Karma(Plugin):
+
+class Karma(Plugin):  # noqa: F821
     def __init__(self, config={}, seed=None):
         super(Karma, self).__init__('karma')
         self._ds = None
@@ -23,7 +24,9 @@ class Karma(Plugin):
             try:
                 open(config['ds'], opts).close()
             except IOError, e:
-                log.err('Cannot open data store %s: %s' % (config['ds'], str(e)))
+                log.err('Cannot open data store %s: %s' % (
+                    config['ds'],
+                    str(e)))
             else:
                 self._ds = config['ds']
 
@@ -42,9 +45,9 @@ class Karma(Plugin):
                 self._karma = {}
 
     def _modify(self, channel, user, amount):
-        if not channel in self._karma:
+        if channel not in self._karma:
             self._karma[channel] = {}
-        if not user in self._karma[channel]:
+        if user not in self._karma[channel]:
             self._karma[channel][user] = 0
 
         self._karma[channel][user] += amount
@@ -87,46 +90,63 @@ class Karma(Plugin):
         """
         return self._karma.get(channel, {})
 
-    @irc_passive('check messages for X++ or X-- and modify karma for X')
+    @irc_passive(  # noqa: F821
+        'check messages for X++ or X-- and modify karma for X')
     def passive_karma(self, user, channel, msg):
-        user = get_nick(user)
+        user = get_nick(user)  # noqa: F821
         pos = re.findall(self._pos_search, msg)
         neg = re.findall(self._neg_search, msg)
         save = False
 
         for nick in pos:
             if nick == user:
-                self._proto.send_msg(channel, "%s: Giving yourself karma?  Lame." % (nick,))
+                self._proto.send_msg(
+                    channel,
+                    "%s: Giving yourself karma?  Lame." % (nick,))
             else:
                 self.add(channel, nick)
-                log.msg("[%s] Adding karma for %s from %s" % (channel, nick, user))
+                log.msg("[%s] Adding karma for %s from %s" % (
+                    channel,
+                    nick,
+                    user))
                 save = True
 
         for nick in neg:
             if nick == user:
-                self._proto.send_msg(channel, "%s: self loathe much?" % (nick,))
+                self._proto.send_msg(
+                    channel,
+                    "%s: self loathe much?" % (nick,))
             self.neg(channel, nick)
-            log.msg("[%s] Subtracting karma for %s from %s" % (channel, nick, user))
+            log.msg("[%s] Subtracting karma for %s from %s" % (
+                channel,
+                nick,
+                user))
             save = True
 
         if save:
             self.save()
 
-    @irc_command('List karma for the current or specified channels')
+    @irc_command(  # noqa: F821
+        'List karma for the current or specified channels')
     def karma(self, user, channel, args):
         channels = args.split(' ')
         if '' in channels:
             channels = [channel]
 
-        send_to = get_nick(user) if channel == self.nickname else channel
+        if channel == self.nickname:
+            send_to = get_nick(user)  # noqa: F821
+        else:
+            send_to = channel
 
         for c in channels:
             karma = self.get_karma(c)
             if len(karma):
                 self._proto.send_notice(send_to, '%s karma:' % (c,))
                 for nick, value in sorted(karma.items(), key=lambda v: v[1]):
-                    self._proto.send_notice(send_to, '    %-20s%d' % (nick + ':', value))
+                    self._proto.send_notice(
+                        send_to,
+                        '    %-20s%d' % (nick + ':', value))
             else:
-                self._proto.send_msg(send_to, 'No one in %s has karma, lame.' % (c,))
-
-
+                self._proto.send_msg(
+                    send_to,
+                    'No one in %s has karma, lame.' % (c,))
