@@ -26,8 +26,4 @@ class HumanId(delbert.plugin.Plugin):
     @delbert.plugin.irc_command(
         'get a potentially funny human readable unique id')
     def humanid(self, user, channel, args):
-        if channel == self.nickname:
-            dest = delbert.plugin.get_nick(user)
-        else:
-            dest = channel
-        self._proto.send_msg(dest, self.get_some())
+        self._proto.send_msg(self.send_to(channel, user), self.get_some())

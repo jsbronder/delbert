@@ -45,11 +45,5 @@ class SprintGoals(delbert.plugin.Plugin):
 
     @delbert.plugin.irc_command('generate a sprint goal')
     def sprint(self, user, channel, args):
-        nick = delbert.plugin.get_nick(user)
-
         msg = self.get_msg()
-
-        if channel == self.nickname:
-            self._proto.send_msg(nick, msg)
-        else:
-            self._proto.send_msg(channel, msg)
+        self._proto.send_msg(self.send_to(channel, user), msg)

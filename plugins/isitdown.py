@@ -46,6 +46,8 @@ class IsItDown(delbert.plugin.Plugin):
     @delbert.plugin.irc_command(
         'check if a site or sites are down for everyone')
     def isitdown(self, user, channel, args):
+        send_to = self.send_to(channel, user)
+
         if len(args):
             urls = args.split(' ')
 
@@ -55,16 +57,7 @@ class IsItDown(delbert.plugin.Plugin):
                 up = self.query(site)
                 msg = '%s is %s' % (site, 'up' if up else 'down')
 
-                if channel == self.nickname:
-                    n = delbert.plugin.get_nick(user)
-                    self._proto.send_msg(n, msg)
-                else:
-                    self._proto.send_msg(channel, msg)
+                self._proto.send_msg(send_to, msg)
         else:
             msg = 'Check if what site or sites are down for everyone?'
-
-            if channel == self.nickname:
-                n = delbert.plugin.get_nick(user)
-                self._proto.send_msg(n, msg)
-            else:
-                self._proto.send_msg(channel, msg)
+            self._proto.send_msg(send_to, msg)

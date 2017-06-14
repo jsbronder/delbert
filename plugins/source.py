@@ -68,20 +68,12 @@ class Source(delbert.plugin.Plugin):
             search = self._post_re.search(msg)
 
         if search is not None:
-            if channel == self.nickname:
-                to = delbert.plugin.get_nick(user)
-            else:
-                to = channel
             self._proto.send_msg(
-                to,
+                self.send_to(channel, user),
                 '%s, %s' % (
                     random.choice(self._responses),
                     self._source))
 
     @delbert.plugin.irc_command('show the suggestion box')
     def source(self, user, channel, args):
-        if channel == self.nickname:
-            to = delbert.plugin.get_nick(user)
-        else:
-            to = channel
-        self._proto.send_msg(to, self._source)
+        self._proto.send_msg(self.send_to(channel, user), self._source)

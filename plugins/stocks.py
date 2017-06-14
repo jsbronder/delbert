@@ -56,8 +56,4 @@ class Stocks(delbert.plugin.Plugin):
                         quote['Change'],
                         quote['ChangePercent'])
 
-            if channel == self.nickname:
-                n = delbert.plugin.get_nick(user)
-                self._proto.send_msg(n, msg)
-            else:
-                self._proto.send_notice(channel, msg)
+            self._proto.send_msg(self.send_to(channel, user), msg)

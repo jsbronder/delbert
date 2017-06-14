@@ -37,10 +37,7 @@ class UrbanDictionary(delbert.plugin.Plugin):
 
     @delbert.plugin.irc_command('lookup a term on urban dictionary')
     def ud(self, user, channel, args):
-        if channel == self.nickname:
-            send_to = delbert.plugin.get_nick(user)
-        else:
-            send_to = channel
+        send_to = self.send_to(channel, user)
 
         if args == '':
             msg = "%s:  someone who doesn't know what they want defined" % (

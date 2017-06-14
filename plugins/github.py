@@ -138,11 +138,7 @@ class Github(delbert.plugin.Plugin):
 
     @delbert.plugin.irc_command('return current github status')
     def github(self, user, channel, args):
-        if channel == self.nickname:
-            nick = delbert.plugin.get_nick(user)
-            self._proto.send_notice(nick, self.status)
-        else:
-            self._proto.send_notice(channel, self.status)
+        self._proto.send_notice(self.send_to(channel, user), self.status)
 
     def handle_push(self, data):
         """

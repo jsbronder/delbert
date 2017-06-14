@@ -136,10 +136,7 @@ class Karma(delbert.plugin.Plugin):
         if '' in channels:
             channels = [channel]
 
-        if channel == self.nickname:
-            send_to = delbert.plugin.get_nick(user)
-        else:
-            send_to = channel
+        send_to = self.send_to(channel, user)
 
         for c in channels:
             karma = self.get_karma(c)

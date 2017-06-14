@@ -31,15 +31,8 @@ class YesNo(delbert.plugin.Plugin):
     @delbert.plugin.irc_command('query the universe for answers')
     def yesno(self, user, channel, args):
         answer, image = self.query()
-
         msg = '%s! (%s)' % (answer.upper(), image)
-
-        if channel == self.nickname:
-            send_to = delbert.plugin.get_nick(user)
-        else:
-            send_to = channel
-
-        self._proto.send_msg(send_to, msg)
+        self._proto.send_msg(self.send_to(channel, user), msg)
 
     @delbert.plugin.irc_passive('Provide answers to the important questions')
     def provide_answers(self, user, channel, msg):

@@ -197,10 +197,7 @@ class Weather(delbert.plugin.Plugin):
         if location is None:
             return
 
-        if channel == self.nickname:
-            send_to = delbert.plugin.get_nick(user)
-        else:
-            send_to = channel
+        send_to = self.send_to(channel, user)
 
         try:
             forecast = self.get_forecast(location)

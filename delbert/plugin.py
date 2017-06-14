@@ -133,6 +133,19 @@ class Plugin(object):
         """
         return self._nickname
 
+    def send_to(self, channel, user):
+        '''
+        Figure out who to send the response to
+
+        @param channel  - current channel as passed to an irc_command
+        @param user     - current user as passed to an irc_command
+
+        @return - destination channel/user
+        '''
+        if channel == self.nickname:
+            return get_nick(user)
+        return channel
+
     def initialize(self, nickname, proto):
         """
         Initialize the plugin.
