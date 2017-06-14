@@ -3,12 +3,14 @@ import urllib
 import requests
 from twisted.python import log
 
+import delbert.plugin
+
 
 class NoDefinition(Exception):
     pass
 
 
-class UrbanDictionary(Plugin):  # noqa: F821
+class UrbanDictionary(delbert.plugin.Plugin):
     def __init__(self, config={}):
         super(UrbanDictionary, self).__init__('UrbanDictionary')
         self._config = config
@@ -33,16 +35,16 @@ class UrbanDictionary(Plugin):  # noqa: F821
         else:
             raise NoDefinition()
 
-    @irc_command('lookup a term on urban dictionary')  # noqa: F821
+    @delbert.plugin.irc_command('lookup a term on urban dictionary')
     def ud(self, user, channel, args):
         if channel == self.nickname:
-            send_to = get_nick(user)  # noqa: F821
+            send_to = delbert.plugin.get_nick(user)
         else:
             send_to = channel
 
         if args == '':
             msg = "%s:  someone who doesn't know what they want defined" % (
-                get_nick(user),)  # noqa: F821
+                delbert.plugin.get_nick(user),)
             self._proto.send_msg(send_to, msg)
         else:
             terms = '+'.join(urllib.quote(t) for t in args.split())

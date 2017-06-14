@@ -1,8 +1,10 @@
 import requests
 from twisted.python import log
 
+import delbert.plugin
 
-class IsItDown(Plugin):  # noqa: F821
+
+class IsItDown(delbert.plugin.Plugin):
     def __init__(self, config={}):
         super(IsItDown, self).__init__('isitdown')
         self._config = config
@@ -41,7 +43,7 @@ class IsItDown(Plugin):  # noqa: F821
 
         return 'not just you!' not in html.text
 
-    @irc_command(  # noqa: F821
+    @delbert.plugin.irc_command(
         'check if a site or sites are down for everyone')
     def isitdown(self, user, channel, args):
         if len(args):
@@ -54,7 +56,7 @@ class IsItDown(Plugin):  # noqa: F821
                 msg = '%s is %s' % (site, 'up' if up else 'down')
 
                 if channel == self.nickname:
-                    n = get_nick(user)  # noqa: F821
+                    n = delbert.plugin.get_nick(user)
                     self._proto.send_msg(n, msg)
                 else:
                     self._proto.send_msg(channel, msg)
@@ -62,7 +64,7 @@ class IsItDown(Plugin):  # noqa: F821
             msg = 'Check if what site or sites are down for everyone?'
 
             if channel == self.nickname:
-                n = get_nick(user)  # noqa: F821
+                n = delbert.plugin.get_nick(user)
                 self._proto.send_msg(n, msg)
             else:
                 self._proto.send_msg(channel, msg)

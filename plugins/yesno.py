@@ -3,8 +3,10 @@ import random
 import requests
 from twisted.python import log
 
+import delbert.plugin
 
-class YesNo(Plugin):  # noqa: F821
+
+class YesNo(delbert.plugin.Plugin):
     def __init__(self, config={}):
         super(YesNo, self).__init__('yesno')
         self._config = config
@@ -26,20 +28,20 @@ class YesNo(Plugin):  # noqa: F821
         jdict = html.json()
         return (jdict['answer'], jdict['image'])
 
-    @irc_command('query the universe for answers')  # noqa: F821
+    @delbert.plugin.irc_command('query the universe for answers')
     def yesno(self, user, channel, args):
         answer, image = self.query()
 
         msg = '%s! (%s)' % (answer.upper(), image)
 
         if channel == self.nickname:
-            send_to = get_nick(user)  # noqa: F821
+            send_to = delbert.plugin.get_nick(user)
         else:
             send_to = channel
 
         self._proto.send_msg(send_to, msg)
 
-    @irc_passive('Provide answers to the important questions')  # noqa: F821
+    @delbert.plugin.irc_passive('Provide answers to the important questions')
     def provide_answers(self, user, channel, msg):
         words = msg.strip().split()
         chances = sum(word.endswith('?') for word in words)

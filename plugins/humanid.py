@@ -1,8 +1,10 @@
 import requests
 from twisted.python import log
 
+import delbert.plugin
 
-class HumanId(Plugin):  # noqa: F821
+
+class HumanId(delbert.plugin.Plugin):
     def __init__(self, config={}):
         super(HumanId, self).__init__('HumanId')
         self._config = config
@@ -21,11 +23,11 @@ class HumanId(Plugin):  # noqa: F821
 
         return html.json().get('text', 'got nothing')
 
-    @irc_command(  # noqa: F821
+    @delbert.plugin.irc_command(
         'get a potentially funny human readable unique id')
     def humanid(self, user, channel, args):
         if channel == self.nickname:
-            dest = get_nick(user)  # noqa: F821
+            dest = delbert.plugin.get_nick(user)
         else:
             dest = channel
         self._proto.send_msg(dest, self.get_some())

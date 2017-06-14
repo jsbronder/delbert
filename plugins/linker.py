@@ -5,10 +5,13 @@ import requests_oauthlib
 from twisted.python import log
 from bs4 import BeautifulSoup as soup
 
+import delbert.plugin
+
+
 twitter_auth = None
 
 
-class Linker(Plugin):  # noqa: F821
+class Linker(delbert.plugin.Plugin):
     def __init__(self, config):
         super(Linker, self).__init__('linker')
         self._config = config
@@ -108,7 +111,7 @@ class Linker(Plugin):  # noqa: F821
             url = redirect['content'].split('url=')[1]
             return url
 
-    @irc_passive('get more information about links')  # noqa: F821
+    @delbert.plugin.irc_passive('get more information about links')
     def linker(self, user, channel, msg):
         urls = self._url_re.findall(msg)
         for url in urls:

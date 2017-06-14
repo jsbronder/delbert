@@ -2,12 +2,14 @@ import requests
 
 from twisted.python import log
 
+import delbert.plugin
+
 
 class InvalidSymbolError(Exception):
     pass
 
 
-class Stocks(Plugin):  # noqa: F821
+class Stocks(delbert.plugin.Plugin):
     def __init__(self, config=None):
         super(Stocks, self).__init__('stocks')
         self._base_url = 'http://dev.markitondemand.com/Api/v2/'
@@ -36,7 +38,7 @@ class Stocks(Plugin):  # noqa: F821
 
         return html.json()
 
-    @irc_command(  # noqa: F821
+    @delbert.plugin.irc_command(
         'Lookup the current quote for the specified ticker symbol')
     def quote(self, user, channel, args):
         log.msg('Pulling quotes for symbols: %s' % (','.join(args.split())))
@@ -55,7 +57,7 @@ class Stocks(Plugin):  # noqa: F821
                         quote['ChangePercent'])
 
             if channel == self.nickname:
-                n = get_nick(user)  # noqa: F821
+                n = delbert.plugin.get_nick(user)
                 self._proto.send_msg(n, msg)
             else:
                 self._proto.send_notice(channel, msg)

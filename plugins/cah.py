@@ -2,8 +2,10 @@ import random
 
 from twisted.python import log
 
+import delbert.plugin
 
-class CardsAgainstHumanity(Plugin):  # noqa: F821
+
+class CardsAgainstHumanity(delbert.plugin.Plugin):
     def __init__(self, config={}, seed=None):
         """
         Create a cards against humanity solver.
@@ -82,9 +84,9 @@ class CardsAgainstHumanity(Plugin):  # noqa: F821
         else:
             return 'Install the CAH text files maybe?'
 
-    @irc_command('generate a cards against humanity solution')   # noqa: F821
+    @delbert.plugin.irc_command('generate a cards against humanity solution')
     def cah(self, user, channel, args):
-        nick = get_nick(user)  # noqa: F821
+        nick = delbert.plugin.get_nick(user)
         msg = self.get_msg()
 
         if channel == self.nickname:

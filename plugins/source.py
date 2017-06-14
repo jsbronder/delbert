@@ -1,8 +1,10 @@
 import random
 import re
 
+import delbert.plugin
 
-class Source(Plugin):  # noqa: F821
+
+class Source(delbert.plugin.Plugin):
     def __init__(self, config={}, seed=None):
         """
         Create a referrer to the source.
@@ -56,7 +58,7 @@ class Source(Plugin):  # noqa: F821
         self._pre_re = re.compile('((%s)\s+)%s(\s+|$)' % (pre, nickname))
         self._post_re = re.compile('(^|\s+)%s(\s+(%s)\s)' % (nickname, post))
 
-    @irc_passive('help user with feature request')  # noqa: F821
+    @delbert.plugin.irc_passive('help user with feature request')
     def request(self, user, channel, msg):
         search = None
 
@@ -67,7 +69,7 @@ class Source(Plugin):  # noqa: F821
 
         if search is not None:
             if channel == self.nickname:
-                to = get_nick(user)  # noqa: F821
+                to = delbert.plugin.get_nick(user)
             else:
                 to = channel
             self._proto.send_msg(
@@ -76,10 +78,10 @@ class Source(Plugin):  # noqa: F821
                     random.choice(self._responses),
                     self._source))
 
-    @irc_command('show the suggestion box')  # noqa: F821
+    @delbert.plugin.irc_command('show the suggestion box')
     def source(self, user, channel, args):
         if channel == self.nickname:
-            to = get_nick(user)  # noqa: F821
+            to = delbert.plugin.get_nick(user)
         else:
             to = channel
         self._proto.send_msg(to, self._source)

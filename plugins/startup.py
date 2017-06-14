@@ -1,8 +1,10 @@
 import requests
 from twisted.python import log
 
+import delbert.plugin
 
-class Startup(Plugin):  # noqa: F821
+
+class Startup(delbert.plugin.Plugin):
     def __init__(self, config={}):
         super(Startup, self).__init__('startup')
         self._config = config
@@ -23,12 +25,12 @@ class Startup(Plugin):  # noqa: F821
 
         return html.content.lower().capitalize()
 
-    @irc_command('generate startup ideas')  # noqa: F821
+    @delbert.plugin.irc_command('generate startup ideas')
     def startup(self, user, channel, args):
         msg = self.query_startup()
 
         if channel == self.nickname:
-            n = get_nick(user)  # noqa: F821
+            n = delbert.plugin.get_nick(user)
             self._proto.send_msg(n, msg)
         else:
             self._proto.send_msg(channel, msg)

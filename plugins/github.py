@@ -6,6 +6,8 @@ from twisted.python import log
 from twisted.web import (server, resource)
 from twisted.internet import reactor
 
+import delbert.plugin
+
 
 class GithubHook(resource.Resource):
     """
@@ -77,7 +79,7 @@ class GithubHook(resource.Resource):
         return ''
 
 
-class Github(Plugin):  # noqa: F821
+class Github(delbert.plugin.Plugin):
     def __init__(self, config=None):
         super(Github, self).__init__('github')
         self._config = config if config is not None else {}
@@ -134,10 +136,10 @@ class Github(Plugin):  # noqa: F821
         else:
             return url
 
-    @irc_command('return current github status')  # noqa: F821
+    @delbert.plugin.irc_command('return current github status')
     def github(self, user, channel, args):
         if channel == self.nickname:
-            nick = get_nick(user)  # noqa: F821
+            nick = delbert.plugin.get_nick(user)
             self._proto.send_notice(nick, self.status)
         else:
             self._proto.send_notice(channel, self.status)

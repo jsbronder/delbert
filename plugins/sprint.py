@@ -4,8 +4,10 @@ import yaml
 
 from twisted.python import log
 
+import delbert.plugin
 
-class SprintGoals(Plugin):  # noqa: F821
+
+class SprintGoals(delbert.plugin.Plugin):
     def __init__(self, config={}, seed=None):
         super(SprintGoals, self).__init__('sprint')
 
@@ -41,9 +43,9 @@ class SprintGoals(Plugin):  # noqa: F821
         else:
             return 'Install the SPRINT text files maybe?'
 
-    @irc_command('generate a sprint goal')  # noqa: F821
+    @delbert.plugin.irc_command('generate a sprint goal')
     def sprint(self, user, channel, args):
-        nick = get_nick(user)  # noqa: F821
+        nick = delbert.plugin.get_nick(user)
 
         msg = self.get_msg()
 

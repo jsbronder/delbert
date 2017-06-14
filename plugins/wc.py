@@ -1,11 +1,13 @@
 import requests
 
+import delbert.plugin
 
-class WorldCup(Plugin):  # noqa: F821
+
+class WorldCup(delbert.plugin.Plugin):
     def __init__(self, config={}):
         super(WorldCup, self).__init__('wc')
 
-    @irc_command('Get current score from world cup')  # noqa: F821
+    @delbert.plugin.irc_command('Get current score from world cup')
     def wc(self, user, channel, args):
         try:
             response = requests.get('http://worldcup.sfg.io/matches/current')

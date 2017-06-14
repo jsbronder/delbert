@@ -8,23 +8,12 @@ import unittest
 
 import responses
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'delbert')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import bot
-import channels
-import plugin
-import utils
+import delbert.bot
+import delbert.channels
 
 plugin_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../plugins'))
-plugin_env = {
-    'get_nick': utils.get_nick,
-    'get_host': utils.get_host,
-    'dbdir': '/tmp/',
-    'Plugin': plugin.Plugin,
-    'irc_command': plugin.irc_command,
-    'irc_passive': plugin.irc_passive,
-    'irc_user_join': plugin.irc_user_join,
-}
 
 TEST_CHANNEL = '#test'
 TEST_NICK = 'testbot'
@@ -42,7 +31,7 @@ def load_plugin(name, obj_name, config={}, *args, **kwds):
 
     @return - an instance of the plugin
     """
-    env = plugin_env.copy()
+    env = {}
     execfile(os.path.join(plugin_dir, name), env)
     return env[obj_name](config, *args, **kwds)
 
@@ -60,16 +49,16 @@ def load_plugin_and_excs(name, obj_name, config={}, *args, **kwds):
     @return - Tuple containing the plugin and a dictionary containing all exceptions
               defined in the plugin file ({exc_name: exc_class}).
     """
-    env = plugin_env.copy()
+    env = {}
     execfile(os.path.join(plugin_dir, name), env)
 
     plugin = env[obj_name](config, *args, **kwds)
     excs = {symbol:cls for symbol, cls in env.items() if inspect.isclass(cls) and issubclass(cls, Exception)}
     return (plugin, excs)
 
-class TestProto(bot.BotProtocol):
+class TestProto(delbert.bot.BotProtocol):
     def __init__(self, plugins):
-        priv_channel = channels.Channel(TEST_NICK, {})
+        priv_channel = delbert.channels.Channel(TEST_NICK, {})
         _ = [priv_channel.register_plugin(p) for p in plugins]
 
         channel_map = {
@@ -78,7 +67,7 @@ class TestProto(bot.BotProtocol):
         }
         _ = [p.initialize(TEST_NICK, self) for p in plugins]
         self._msgs = []
-        bot.BotProtocol.__init__(self, TEST_NICK, 'pw', channel_map)
+        delbert.bot.BotProtocol.__init__(self, TEST_NICK, 'pw', channel_map)
 
     @property
     def msgs(self):
@@ -99,7 +88,7 @@ class TestProto(bot.BotProtocol):
     def send_notice(self, channel, msg):
         self._msgs.append(('notice', channel, msg))
 
-class TestChannel(channels.Channel):
+class TestChannel(delbert.channels.Channel):
     def __init__(self, plugins):
         config = {
             'config-plugin': {

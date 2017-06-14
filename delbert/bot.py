@@ -20,7 +20,6 @@ from twisted.protocols.policies import TrafficLoggingFactory
 
 import channels
 import plugin
-import utils
 
 DEFAULT_CONFIG = os.path.join(
     os.environ['HOME'], '.config', 'delbert', 'bot.conf')
@@ -110,7 +109,7 @@ class BotProtocol(irc.IRCClient):
     def userJoined(self, user, channel):
         log.msg('%s joined %s' % (user, channel))
 
-        nick = utils.get_nick(user)
+        nick = plugin.get_nick(user)
 
         for name, f in self._channels[channel].user_joins.items():
             eb = functools.partial(
@@ -224,17 +223,6 @@ class BotFactory(protocol.ClientFactory):
         time.sleep(1)
         connector.connect()
 
-    def _get_plugin_env(self):
-        return {
-            'get_nick': utils.get_nick,
-            'get_host': utils.get_host,
-            'dbdir': self.dbdir,
-            'Plugin': plugin.Plugin,
-            'irc_command': plugin.irc_command,
-            'irc_passive': plugin.irc_passive,
-            'irc_user_join': plugin.irc_user_join,
-        }
-
     def _load_plugins(self, path='plugins'):
         def is_plugin(obj):
             return (type(obj) == type
@@ -244,9 +232,9 @@ class BotFactory(protocol.ClientFactory):
         for pfile in os.listdir(path):
             if pfile.endswith('.py') and not pfile.startswith('__'):
                 pname = pfile[:-3]
+                env = {}
 
                 try:
-                    env = self._get_plugin_env()
                     execfile(os.path.join(path, pfile), env)
 
                 except ImportError, e:

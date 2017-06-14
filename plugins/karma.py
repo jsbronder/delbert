@@ -5,10 +5,13 @@ import threading
 import yaml
 from twisted.python import log
 
+import delbert.plugin
+
+
 KARMA_TRACKER = None
 
 
-class Karma(Plugin):  # noqa: F821
+class Karma(delbert.plugin.Plugin):
     def __init__(self, config={}, seed=None):
         super(Karma, self).__init__('karma')
         self._ds = None
@@ -90,10 +93,10 @@ class Karma(Plugin):  # noqa: F821
         """
         return self._karma.get(channel, {})
 
-    @irc_passive(  # noqa: F821
+    @delbert.plugin.irc_passive(
         'check messages for X++ or X-- and modify karma for X')
     def passive_karma(self, user, channel, msg):
-        user = get_nick(user)  # noqa: F821
+        user = delbert.plugin.get_nick(user)
         pos = re.findall(self._pos_search, msg)
         neg = re.findall(self._neg_search, msg)
         save = False
@@ -126,7 +129,7 @@ class Karma(Plugin):  # noqa: F821
         if save:
             self.save()
 
-    @irc_command(  # noqa: F821
+    @delbert.plugin.irc_command(
         'List karma for the current or specified channels')
     def karma(self, user, channel, args):
         channels = args.split(' ')
@@ -134,7 +137,7 @@ class Karma(Plugin):  # noqa: F821
             channels = [channel]
 
         if channel == self.nickname:
-            send_to = get_nick(user)  # noqa: F821
+            send_to = delbert.plugin.get_nick(user)
         else:
             send_to = channel
 

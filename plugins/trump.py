@@ -1,8 +1,10 @@
 import random
 import string
 
+import delbert.plugin
 
-class Trump(Plugin):  # noqa: F821
+
+class Trump(delbert.plugin.Plugin):
     def __init__(self, config={}, seed=None):
         """
         Make a Trumpian comment
@@ -71,7 +73,7 @@ class Trump(Plugin):  # noqa: F821
 
         return set(translation.lower().split())
 
-    @irc_passive(  # noqa: F821
+    @delbert.plugin.irc_passive(
         'Offer the best comments. The best. No-one offers better comments.')
     def comment(self, user, channel, msg):
         if(random.random() > self.verbosity):

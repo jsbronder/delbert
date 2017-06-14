@@ -3,8 +3,10 @@ import errno
 import requests
 from twisted.python import log
 
+import delbert.plugin
 
-class Weather(Plugin):  # noqa: F821
+
+class Weather(delbert.plugin.Plugin):
     """
     Plugin that handles looking up weather at various locations.
     """
@@ -118,12 +120,12 @@ class Weather(Plugin):  # noqa: F821
                           wunderground API or None on Failure.
         """
         if channel == self.nickname:
-            send_to = get_nick(user)  # noqa: F821
+            send_to = delbert.plugin.get_nick(user)
         else:
             send_to = channel
 
         if args == '':
-            host = get_host(user)  # noqa: F821
+            host = delbert.plugin.get_host(user)
             if '/' in host:
                 self._proto.send_msg(
                     send_to,
@@ -155,7 +157,7 @@ class Weather(Plugin):  # noqa: F821
 
         return location
 
-    @irc_command(  # noqa: F821
+    @delbert.plugin.irc_command(
         'get weather for specified location or based your ip')
     def weather(self, user, channel, args):
         location = self._get_user_location(user, channel, args)
@@ -163,7 +165,7 @@ class Weather(Plugin):  # noqa: F821
             return
 
         if channel == self.nickname:
-            send_to = get_nick(user)  # noqa: F821
+            send_to = delbert.plugin.get_nick(user)
         else:
             send_to = channel
 
@@ -188,7 +190,7 @@ class Weather(Plugin):  # noqa: F821
 
         self._proto.send_msg(send_to, ret)
 
-    @irc_command(  # noqa: F821
+    @delbert.plugin.irc_command(
         'get forecast for specified location or based on your ip')
     def forecast(self, user, channel, args):
         location = self._get_user_location(user, channel, args)
@@ -196,7 +198,7 @@ class Weather(Plugin):  # noqa: F821
             return
 
         if channel == self.nickname:
-            send_to = get_nick(user)  # noqa: F821
+            send_to = delbert.plugin.get_nick(user)
         else:
             send_to = channel
 

@@ -4,53 +4,49 @@ import unittest
 
 import base
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import delbert.plugin
 
-import bot
-import channels
-import plugin
-import utils
 
-class TestPlugin(plugin.Plugin):
+class TestPlugin(delbert.plugin.Plugin):
     def __init__(self):
         super(TestPlugin, self).__init__('test-plugin')
 
-    @plugin.irc_command('say_f help')
+    @delbert.plugin.irc_command('say_f help')
     def say_f(self, user, channel, args):
         if channel == self.nickname:
-            self._proto.send_msg(utils.get_nick(user), 'secret f')
+            self._proto.send_msg(delbert.plugin.get_nick(user), 'secret f')
         else:
             self._proto.send_msg(channel, 'f')
 
-    @plugin.irc_command('say_g help')
+    @delbert.plugin.irc_command('say_g help')
     def say_g(self, user, channel, args):
         if channel == self.nickname:
-            self._proto.send_msg(utils.get_nick(user), 'secret g')
+            self._proto.send_msg(delbert.plugin.get_nick(user), 'secret g')
         else:
             self._proto.send_msg(channel, 'g')
 
-    @plugin.irc_command('notice_f help')
+    @delbert.plugin.irc_command('notice_f help')
     def notice_f(self, user, channel, args):
         self._proto.send_notice(channel, 'f')
 
-    @plugin.irc_user_join('user_join_f help')
+    @delbert.plugin.irc_user_join('user_join_f help')
     def user_join_f(self, user, channel):
         self._proto.send_msg(channel, 'hi %s' % (user,))
 
-    @plugin.irc_passive('passive command')
+    @delbert.plugin.irc_passive('passive command')
     def hammer(self, user, channel, msg):
         if msg.endswith(' stop'):
             self._proto.send_msg(channel, 'hammertime')
 
-class ConfigPlugin(plugin.Plugin):
+class ConfigPlugin(delbert.plugin.Plugin):
     def __init__(self):
         super(ConfigPlugin, self).__init__('config-plugin')
 
-    @plugin.irc_command('cmd1 help')
+    @delbert.plugin.irc_command('cmd1 help')
     def cmd1(self, user, channel, args):
         self._proto.send_msg(channel, 'cmd1')
 
-    @plugin.irc_command('cmd2 help')
+    @delbert.plugin.irc_command('cmd2 help')
     def cmd2(self, user, channel, args):
         self._proto.send_msg(channel, 'cmd2')
 
