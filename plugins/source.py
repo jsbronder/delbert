@@ -55,8 +55,9 @@ class Source(delbert.plugin.Plugin):
         super(Source, self).initialize(nickname, proto)
         pre = '|'.join(self._pre_verbs)
         post = '|'.join(self._post_verbs)
-        self._pre_re = re.compile('((%s)\s+)%s(\s+|$)' % (pre, nickname))
-        self._post_re = re.compile('(^|\s+)%s(\s+(%s)\s)' % (nickname, post))
+        self._pre_re = re.compile('((%s)\\s+)%s(\\s+|$)' % (pre, nickname))
+        self._post_re = re.compile('(^|\\s+)%s(\\s+(%s)\\s)' % (
+            nickname, post))
 
     @delbert.plugin.irc_passive('help user with feature request')
     def request(self, user, channel, msg):

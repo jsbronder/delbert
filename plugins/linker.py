@@ -17,7 +17,7 @@ class Linker(delbert.plugin.Plugin):
         self._config = config
         self._twitter_auth = None
         self._url_re = re.compile(
-            'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+#]|[!*\(\),]'
+            'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+#]|[!*\\(\\),]'
             '|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
         self._twitter_re = re.compile(
             'http[s]?://(?:www.)?twitter.com/.+/status/([0-9]+)')

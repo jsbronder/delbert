@@ -32,8 +32,8 @@ class CardsAgainstHumanity(delbert.plugin.Plugin):
         def read_cards(path):
             with open(path) as fp:
                 return [
-                    l for l in fp.readlines()
-                    if not l.startswith('#') and l != '\n']
+                    ln for ln in fp.readlines()
+                    if not ln.startswith('#') and ln != '\n']
 
         try:
             self._black = read_cards(config['black'])

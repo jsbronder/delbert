@@ -17,7 +17,8 @@ class WorldCup(delbert.plugin.Plugin):
             self._proto.send_msg(channel, notice)
         else:
             try:
-                response = requests.get('http://worldcup.sfg.io/matches/current')
+                response = requests.get(
+                    'http://worldcup.sfg.io/matches/current')
                 results = response.json()
                 for result in results:
                     away_team = result['away_team']['country']

@@ -34,8 +34,8 @@ class Karma(delbert.plugin.Plugin):
                 self._ds = config['ds']
 
         self._karma = {}
-        self._pos_search = re.compile('(\w+)\+\+(?:\s+|\Z)')
-        self._neg_search = re.compile('(\w+)--(?:\s+|\Z)')
+        self._pos_search = re.compile('(\\w+)\\+\\+(?:\\s+|\\Z)')
+        self._neg_search = re.compile('(\\w+)--(?:\\s+|\\Z)')
 
         self._refresh()
 
