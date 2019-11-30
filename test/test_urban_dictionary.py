@@ -13,7 +13,7 @@ class UDTester(unittest.TestCase):
     @base.net_test
     def test_query_real(self):
         m = self._plugin.query('test')
-        self.assertEqual('A process for testing things', m)
+        self.assertTrue(m.startswith('The word all students fear.'))
 
     @responses.activate
     def test_query(self):
